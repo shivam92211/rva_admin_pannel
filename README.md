@@ -1,41 +1,43 @@
 # KuCoin Broker Admin Panel
 
-A comprehensive admin dashboard for monitoring and managing KuCoin broker accounts. Built with Vue.js 3, TypeScript, Tailwind CSS, and modern web technologies.
+A comprehensive admin dashboard for monitoring and managing KuCoin broker accounts. Built with React, TypeScript, Tailwind CSS, and modern web technologies.
 
 ## Features
 
-- **Dashboard**: Central hub for at-a-glance monitoring of broker activities
+- **Dashboard**: Central hub for at-a-glance monitoring of broker activities with API configuration status
 - **Sub-account Management**: Create, view, and manage sub-accounts and their API keys
 - **Asset Management**: Handle fund transfers and view deposit/withdrawal history
 - **Rebate Tracking**: Download and view broker rebate reports
-- **API Integration**: Full integration with KuCoin Broker APIs
+- **API Integration**: Full integration with KuCoin Broker APIs with proper broker authentication
 - **Responsive Design**: Modern, mobile-friendly interface
+- **Environment Configuration**: Support for both environment variables and UI-based credential setup
 
 ## Technology Stack
 
-- **Framework**: Vue.js 3 with Composition API
+- **Framework**: React 18 with Hooks
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
-- **State Management**: Pinia
+- **State Management**: Zustand
 - **HTTP Client**: Axios
 - **Date Handling**: date-fns
-- **Icons**: Lucide Vue Next
+- **Icons**: Lucide React
 - **Build Tool**: Vite
+- **Charts**: Chart.js with react-chartjs-2
 
 ## Project Structure
 
 ```
 src/
-├── assets/          # Static assets
-├── components/      # Reusable components
-├── layouts/         # Layout components
-├── router/          # Vue Router configuration
-├── services/        # API service layer
-├── stores/          # Pinia stores
-├── types/           # TypeScript type definitions
-├── utils/           # Utility functions
-├── views/           # Page components
-└── main.ts          # Application entry point
+├── components/      # Reusable React components
+├── hooks/          # Custom React hooks
+├── layouts/        # Layout components
+├── router/         # React Router configuration
+├── services/       # API service layer
+├── store/          # Zustand stores
+├── types/          # TypeScript type definitions
+├── lib/            # Utility functions
+├── views/          # Page components
+└── main.tsx        # Application entry point
 ```
 
 ## API Integration
@@ -93,12 +95,38 @@ The application integrates with the following KuCoin Broker API endpoints:
 
 ### Configuration
 
-1. **API Credentials**: Click the settings icon in the navigation bar to configure your KuCoin API credentials:
+#### Method 1: Environment Variables (Recommended for Production)
+
+Create a `.env` file in the project root with your KuCoin Broker API credentials:
+
+```env
+# KuCoin Broker API Configuration
+VITE_KUCOIN_BROKER_API_KEY=your_broker_api_key_here
+VITE_KUCOIN_BROKER_API_SECRET=your_broker_api_secret_here
+VITE_KUCOIN_BROKER_API_PASSPHRASE=your_broker_api_passphrase_here
+
+# Broker Partner Information (Optional)
+VITE_KUCOIN_BROKER_PARTNER_KEY=your_broker_partner_key_here
+VITE_KUCOIN_BROKER_NAME=your_broker_name_here
+
+# Environment Settings
+VITE_ENVIRONMENT=development
+VITE_DEMO_MODE=false
+```
+
+#### Method 2: UI Configuration (Development/Testing)
+
+1. Start the application and navigate to the Dashboard
+2. Click "Configure API" button
+3. Enter your KuCoin Broker API credentials:
    - API Key
    - API Secret  
-   - Passphrase
+   - API Passphrase
+   - Partner Key (optional)
+   - Broker Name (optional)
+4. Save the settings
 
-2. **Environment**: The application connects to KuCoin's production broker API endpoint (`https://api-broker.kucoin.com`)
+**Note**: The application connects to KuCoin's production API endpoint (`https://api.kucoin.com`)
 
 ### Build for Production
 
@@ -139,11 +167,15 @@ The built application will be in the `dist` directory.
 
 ## Security Considerations
 
-- API credentials are stored in localStorage
-- All API requests use proper authentication headers
-- IP whitelisting supported for API keys (max 20 IPs)
-- Input validation for all forms
-- Error handling and user feedback
+- **Environment Variables**: Preferred method for storing credentials in production
+- **Local Storage**: Used as fallback for development/testing (not recommended for production)
+- **Broker Authentication**: Proper KuCoin Broker API authentication with required headers:
+  - `KC-API-KEY`, `KC-API-SIGN`, `KC-API-TIMESTAMP`, `KC-API-PASSPHRASE`, `KC-API-KEY-VERSION`
+  - `KC-API-PARTNER`, `KC-API-PARTNER-SIGN`, `KC-API-PARTNER-VERIFY`, `KC-BROKER-NAME`
+- **IP Whitelisting**: Supported for API keys (max 20 IPs)
+- **Input Validation**: All forms include proper validation
+- **Error Handling**: Comprehensive error handling and user feedback
+- **HTTPS**: All API communications use HTTPS
 
 ## Development
 

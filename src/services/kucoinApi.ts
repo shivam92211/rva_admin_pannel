@@ -27,10 +27,27 @@ import type {
 
 class KuCoinBrokerAPI {
   private client: AxiosInstance
+  private brokerApiKey: string
+  private brokerApiSecret: string
+  private brokerApiPassphrase: string
+  private brokerPartnerKey: string
+  private brokerName: string
 
   constructor() {
+    // Get broker credentials from environment variables or localStorage
+    this.brokerApiKey = import.meta.env.VITE_KUCOIN_BROKER_API_KEY || 
+                       localStorage.getItem('kucoin_broker_api_key') || ''
+    this.brokerApiSecret = import.meta.env.VITE_KUCOIN_BROKER_API_SECRET || 
+                          localStorage.getItem('kucoin_broker_api_secret') || ''
+    this.brokerApiPassphrase = import.meta.env.VITE_KUCOIN_BROKER_API_PASSPHRASE || 
+                              localStorage.getItem('kucoin_broker_api_passphrase') || ''
+    this.brokerPartnerKey = import.meta.env.VITE_KUCOIN_BROKER_PARTNER_KEY || 
+                           localStorage.getItem('kucoin_broker_partner_key') || ''
+    this.brokerName = import.meta.env.VITE_KUCOIN_BROKER_NAME || 
+                     localStorage.getItem('kucoin_broker_name') || ''
+
     this.client = axios.create({
-      baseURL: 'https://api-broker.kucoin.com',
+      baseURL: 'https://api.kucoin.com',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json'
@@ -45,14 +62,15 @@ class KuCoinBrokerAPI {
     return CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(str, secret))
   }
 
+  private generatePartnerSignature(timestamp: string, partnerKey: string, apiKey: string): string {
+    const str = timestamp + partnerKey + apiKey
+    return CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(str, partnerKey))
+  }
+
   private setupInterceptors() {
     this.client.interceptors.request.use(
       (config) => {
-        const apiKey = localStorage.getItem('kucoin_api_key')
-        const apiSecret = localStorage.getItem('kucoin_api_secret')
-        const passphrase = localStorage.getItem('kucoin_api_passphrase')
-
-        if (apiKey && apiSecret && passphrase) {
+        if (this.brokerApiKey && this.brokerApiSecret && this.brokerApiPassphrase) {
           const timestamp = Date.now().toString()
           const method = (config.method || 'get').toUpperCase()
           const endpoint = config.url || ''
@@ -65,18 +83,31 @@ class KuCoinBrokerAPI {
           }
           
           const body = config.data ? JSON.stringify(config.data) : ''
-          const signature = this.generateSignature(timestamp, method, fullEndpoint, body, apiSecret)
+          const signature = this.generateSignature(timestamp, method, fullEndpoint, body, this.brokerApiSecret)
           
           // Encrypt the passphrase with the secret
           const encryptedPassphrase = CryptoJS.enc.Base64.stringify(
-            CryptoJS.HmacSHA256(passphrase, apiSecret)
+            CryptoJS.HmacSHA256(this.brokerApiPassphrase, this.brokerApiSecret)
           )
 
-          config.headers['KC-API-KEY'] = apiKey
+          // Standard KuCoin headers
+          config.headers['KC-API-KEY'] = this.brokerApiKey
           config.headers['KC-API-SIGN'] = signature
           config.headers['KC-API-TIMESTAMP'] = timestamp
           config.headers['KC-API-PASSPHRASE'] = encryptedPassphrase
           config.headers['KC-API-KEY-VERSION'] = '2'
+
+          // Broker-specific headers
+          if (this.brokerPartnerKey) {
+            const partnerSign = this.generatePartnerSignature(timestamp, this.brokerPartnerKey, this.brokerApiKey)
+            config.headers['KC-API-PARTNER'] = this.brokerPartnerKey
+            config.headers['KC-API-PARTNER-SIGN'] = partnerSign
+            config.headers['KC-API-PARTNER-VERIFY'] = 'true'
+          }
+
+          if (this.brokerName) {
+            config.headers['KC-BROKER-NAME'] = this.brokerName
+          }
         }
 
         return config
@@ -93,6 +124,36 @@ class KuCoinBrokerAPI {
         return Promise.reject(error)
       }
     )
+  }
+
+  // Check if broker credentials are properly configured
+  isBrokerConfigured(): boolean {
+    return !!(this.brokerApiKey && this.brokerApiSecret && this.brokerApiPassphrase)
+  }
+
+  getBrokerCredentials() {
+    return {
+      apiKey: this.brokerApiKey,
+      hasSecret: !!this.brokerApiSecret,
+      hasPassphrase: !!this.brokerApiPassphrase,
+      partnerKey: this.brokerPartnerKey,
+      brokerName: this.brokerName,
+      isConfigured: this.isBrokerConfigured()
+    }
+  }
+
+  // Refresh credentials (useful after user updates settings)
+  refreshCredentials() {
+    this.brokerApiKey = import.meta.env.VITE_KUCOIN_BROKER_API_KEY || 
+                       localStorage.getItem('kucoin_broker_api_key') || ''
+    this.brokerApiSecret = import.meta.env.VITE_KUCOIN_BROKER_API_SECRET || 
+                          localStorage.getItem('kucoin_broker_api_secret') || ''
+    this.brokerApiPassphrase = import.meta.env.VITE_KUCOIN_BROKER_API_PASSPHRASE || 
+                              localStorage.getItem('kucoin_broker_api_passphrase') || ''
+    this.brokerPartnerKey = import.meta.env.VITE_KUCOIN_BROKER_PARTNER_KEY || 
+                           localStorage.getItem('kucoin_broker_partner_key') || ''
+    this.brokerName = import.meta.env.VITE_KUCOIN_BROKER_NAME || 
+                     localStorage.getItem('kucoin_broker_name') || ''
   }
 
   async getBrokerInfo(params: GetBrokerInfoRequest): Promise<BrokerInfo> {
