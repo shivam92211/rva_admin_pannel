@@ -1,52 +1,53 @@
 import React, { useEffect } from 'react'
 import { PageHeader } from '@/components/PageHeader'
-import { DepositHistoryTable } from '@/components/deposit/DepositHistoryTable'
+import { WithdrawalHistoryTable } from '@/components/withdrawal/WithdrawalHistoryTable'
 import { Button } from '@/components/ui/button'
-import { useDepositStore } from '@/store/deposit'
+import { useWithdrawalStore } from '@/store/withdrawal'
 import { kucoinApi } from '@/services/kucoinApi'
 import { Download } from 'lucide-react'
 
-const DepositsView: React.FC = () => {
-  const { fetchDeposits, loadDummyData, deposits, error, clearError } = useDepositStore()
+const WithdrawalsView: React.FC = () => {
+  const { fetchWithdrawals, loadDummyData, withdrawals, error, clearError } = useWithdrawalStore()
 
   useEffect(() => {
     // Initialize data when component mounts
     const isConfigured = kucoinApi.isBrokerConfigured()
     if (isConfigured) {
-      fetchDeposits()
+      fetchWithdrawals()
     } else {
       loadDummyData()
     }
-  }, [fetchDeposits, loadDummyData])
+  }, [fetchWithdrawals, loadDummyData])
 
   const isConfigured = kucoinApi.isBrokerConfigured()
 
   const handleExport = () => {
-    // Create CSV export of deposits
-    if (deposits.length === 0) return
+    // Create CSV export of withdrawals
+    if (withdrawals.length === 0) return
 
-    const csvHeaders = ['Hash', 'Currency', 'Amount', 'Chain', 'Address', 'Status', 'Created At', 'Updated At']
-    const csvRows = deposits.map(deposit => [
-      deposit.hash,
-      deposit.currency,
-      deposit.amount,
-      deposit.chain,
-      deposit.address,
-      deposit.status,
-      new Date(deposit.createdAt).toISOString(),
-      new Date(deposit.updatedAt).toISOString()
+    const csvHeaders = ['Withdrawal ID', 'Currency', 'Amount', 'Chain', 'Address', 'Status', 'Created At', 'Updated At', 'Wallet TX ID']
+    const csvRows = withdrawals.map(withdrawal => [
+      withdrawal.id,
+      withdrawal.currency,
+      withdrawal.amount,
+      withdrawal.chain,
+      withdrawal.address,
+      withdrawal.status,
+      new Date(withdrawal.createdAt).toISOString(),
+      new Date(withdrawal.updatedAt).toISOString(),
+      withdrawal.walletTxId
     ])
 
     const csvContent = [
       csvHeaders.join(','),
-      ...csvRows.map(row => row.join(','))
+      ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `deposits_${new Date().toISOString().split('T')[0]}.csv`
+    link.download = `withdrawals_${new Date().toISOString().split('T')[0]}.csv`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -56,13 +57,13 @@ const DepositsView: React.FC = () => {
   return (
     <div className="flex flex-col h-full">
       <PageHeader 
-        title="Deposits" 
-        description="Monitor deposit activities and transactions"
+        title="Withdrawals" 
+        description="Monitor withdrawal activities and transactions"
       >
         <Button 
           variant="outline"
           onClick={handleExport}
-          disabled={deposits.length === 0}
+          disabled={withdrawals.length === 0}
         >
           <Download className="h-4 w-4 mr-2" />
           Export CSV
@@ -86,8 +87,8 @@ const DepositsView: React.FC = () => {
                   </h3>
                   <div className="mt-2 text-sm text-yellow-200">
                     <p>
-                      Broker API credentials are not configured. The deposit monitoring will use demo data. 
-                      Configure your API credentials in the dashboard to enable live deposit tracking.
+                      Broker API credentials are not configured. The withdrawal monitoring will use demo data. 
+                      Configure your API credentials in the dashboard to enable live withdrawal tracking.
                     </p>
                   </div>
                 </div>
@@ -124,12 +125,12 @@ const DepositsView: React.FC = () => {
             </div>
           )}
 
-          {/* Deposit History */}
-          <DepositHistoryTable />
+          {/* Withdrawal History */}
+          <WithdrawalHistoryTable />
 
           {/* Help Section */}
           <div className="bg-gray-800 rounded-lg p-6">
-            <h3 className="text-lg font-medium text-white mb-4">Deposit Information</h3>
+            <h3 className="text-lg font-medium text-white mb-4">Withdrawal Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-300">
               <div>
                 <h4 className="font-medium text-white mb-2">Supported Networks</h4>
@@ -141,27 +142,29 @@ const DepositsView: React.FC = () => {
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium text-white mb-2">Deposit Status</h4>
+                <h4 className="font-medium text-white mb-2">Withdrawal Status</h4>
                 <ul className="space-y-1">
-                  <li><span className="text-green-300">SUCCESS:</span> Deposit confirmed and credited</li>
-                  <li><span className="text-yellow-300">PROCESSING:</span> Awaiting network confirmation</li>
-                  <li><span className="text-red-300">FAILURE:</span> Deposit failed or rejected</li>
+                  <li><span className="text-green-300">SUCCESS:</span> Withdrawal completed and sent</li>
+                  <li><span className="text-yellow-300">PROCESSING:</span> Withdrawal being processed</li>
+                  <li><span className="text-red-300">FAILURE:</span> Withdrawal failed or rejected</li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-medium text-white mb-2">Important Notes</h4>
                 <ul className="space-y-1">
-                  <li>• Deposit confirmation times vary by network</li>
-                  <li>• Always verify the deposit address before sending</li>
-                  <li>• Check minimum deposit amounts for each currency</li>
+                  <li>• Withdrawal processing times vary by network</li>
+                  <li>• Always double-check destination addresses</li>
+                  <li>• Check network fees before initiating withdrawals</li>
+                  <li>• Some withdrawals may require additional verification</li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-medium text-white mb-2">Transaction Details</h4>
                 <ul className="space-y-1">
-                  <li>• Click the eye icon to view full deposit details</li>
-                  <li>• External link opens block explorer</li>
-                  <li>• Use filters to find specific deposits</li>
+                  <li>• Click the eye icon to view full withdrawal details</li>
+                  <li>• External link opens block explorer for verification</li>
+                  <li>• Use filters to find specific withdrawals</li>
+                  <li>• Export data for record keeping and analysis</li>
                 </ul>
               </div>
             </div>
@@ -172,4 +175,4 @@ const DepositsView: React.FC = () => {
   )
 }
 
-export default DepositsView
+export default WithdrawalsView

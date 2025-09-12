@@ -7,6 +7,7 @@ import DashboardView from '../views/DashboardView'
 const SubAccountsView = React.lazy(() => import('../views/SubAccountsView'))
 const TransfersView = React.lazy(() => import('../views/TransfersView'))
 const DepositsView = React.lazy(() => import('../views/DepositsView'))
+const WithdrawalsView = React.lazy(() => import('../views/WithdrawalsView'))
 const RebatesView = React.lazy(() => import('../views/RebatesView'))
 
 // Layout wrapper component
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
       {
         path: '/deposits',
         element: <DepositsView />
+      },
+      {
+        path: '/withdrawals',
+        element: <WithdrawalsView />
       },
       {
         path: '/rebates',

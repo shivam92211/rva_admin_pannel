@@ -126,6 +126,20 @@ export interface RebateDownloadRequest {
   tradeType: 1 | 2
 }
 
+export interface RebateRecord {
+  date: string
+  brokerUid: string
+  affiliateUid: string
+  uid: string
+  bizLine: 'Spot' | 'Futures'
+  volume: string
+  totalCommission: string
+  brokerCommission: string
+  userCommission: string
+  affiliateCommission: string
+  createdAt: number
+}
+
 export interface KycSubmitRequest {
   uid: string
   firstName: string

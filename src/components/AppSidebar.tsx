@@ -5,6 +5,7 @@ import {
   Users,
   ArrowLeftRight,
   Wallet,
+  ArrowUpRight,
   TrendingUp,
   Settings,
   RefreshCw,
@@ -57,6 +58,11 @@ const data = {
       title: "Deposits",
       url: "/deposits",
       icon: Wallet,
+    },
+    {
+      title: "Withdrawals",
+      url: "/withdrawals",
+      icon: ArrowUpRight,
     },
     {
       title: "Rebates",
