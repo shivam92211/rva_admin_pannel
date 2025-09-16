@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   X,
+  UserCheck,
 } from "lucide-react"
 
 import {
@@ -68,6 +69,11 @@ const data = {
       title: "Rebates",
       url: "/rebates",
       icon: TrendingUp,
+    },
+    {
+      title: "Users",
+      url: "/users",
+      icon: UserCheck,
     },
   ],
 }

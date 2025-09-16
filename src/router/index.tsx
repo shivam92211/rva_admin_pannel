@@ -9,6 +9,7 @@ const TransfersView = React.lazy(() => import('../views/TransfersView'))
 const DepositsView = React.lazy(() => import('../views/DepositsView'))
 const WithdrawalsView = React.lazy(() => import('../views/WithdrawalsView'))
 const RebatesView = React.lazy(() => import('../views/RebatesView'))
+const UsersView = React.lazy(() => import('../views/UsersView'))
 
 // Layout wrapper component
 const LayoutWrapper: React.FC = () => {
@@ -49,6 +50,10 @@ export const router = createBrowserRouter([
       {
         path: '/rebates',
         element: <RebatesView />
+      },
+      {
+        path: '/users',
+        element: <UsersView />
       }
     ]
   }
