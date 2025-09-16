@@ -126,9 +126,9 @@ const UsersView: React.FC = () => {
         </div>
       </PageHeader>
 
-      <div className="flex-1 p-6">
-        <div className="bg-card rounded-lg p-6">
-          <div className="flex items-center gap-4 mb-6">
+      <div className="flex-1 p-6 overflow-hidden">
+        <div className="bg-card rounded-lg p-6 h-full flex flex-col">
+          <div className="flex items-center gap-4 mb-6 flex-shrink-0">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -155,88 +155,90 @@ const UsersView: React.FC = () => {
             </div>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
+          <div className="flex-1 overflow-hidden rounded-md border">
+            <div className="h-full overflow-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
-                      <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
-                      Loading users...
-                    </TableCell>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : users.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No users found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.username}</TableCell>
-                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                      <TableCell>
-                        {user.firstName || user.lastName
-                          ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-                          : '—'
-                        }
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {user.phoneNumber || user.phone || '—'}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(user.isActive)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDate(user.createdAt)}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleUserStatus(user.id)}
-                          disabled={loading}
-                          className={`flex items-center gap-2 ${
-                            user.isActive
-                              ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                              : 'hover:bg-green-50 hover:text-green-600 hover:border-green-200'
-                          }`}
-                        >
-                          {user.isActive ? (
-                            <>
-                              <PowerOff className="h-4 w-4" />
-                              Deactivate
-                            </>
-                          ) : (
-                            <>
-                              <Power className="h-4 w-4" />
-                              Activate
-                            </>
-                          )}
-                        </Button>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
+                        Loading users...
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        No users found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.username}</TableCell>
+                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                        <TableCell>
+                          {user.firstName || user.lastName
+                            ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                            : '—'
+                          }
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.phoneNumber || user.phone || '—'}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(user.isActive)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDate(user.createdAt)}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggleUserStatus(user.id)}
+                            disabled={loading}
+                            className={`flex items-center gap-2 ${
+                              user.isActive
+                                ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                                : 'hover:bg-green-50 hover:text-green-600 hover:border-green-200'
+                            }`}
+                          >
+                            {user.isActive ? (
+                              <>
+                                <PowerOff className="h-4 w-4" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <Power className="h-4 w-4" />
+                                Activate
+                              </>
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between space-x-2 py-4">
+            <div className="flex items-center justify-between space-x-2 py-4 flex-shrink-0">
               <div className="text-sm text-muted-foreground">
                 Page {currentPage} of {totalPages}
               </div>
