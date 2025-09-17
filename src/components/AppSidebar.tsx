@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   UserCheck,
+  FileText,
 } from "lucide-react"
 
 import {
@@ -74,6 +75,11 @@ const data = {
       title: "Users",
       url: "/users",
       icon: UserCheck,
+    },
+    {
+      title: "KYC Submissions",
+      url: "/kyc-submissions",
+      icon: FileText,
     },
   ],
 }

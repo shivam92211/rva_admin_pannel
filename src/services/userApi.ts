@@ -41,6 +41,7 @@ export interface GetUsersParams {
   limit?: number
   search?: string
   status?: string
+  whitelist?: string
 }
 
 class UserAPI {
@@ -87,6 +88,11 @@ class UserAPI {
 
   async toggleUserStatus(id: string): Promise<{ id: string; isActive: boolean; message: string }> {
     const response = await this.client.patch(`/users/${id}/toggle-status`)
+    return response.data
+  }
+
+  async toggleWithdrawalWhitelist(id: string): Promise<{ id: string; withdrawalWhitelist: boolean; message: string }> {
+    const response = await this.client.patch(`/users/${id}/toggle-whitelist`)
     return response.data
   }
 }

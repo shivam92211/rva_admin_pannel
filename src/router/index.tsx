@@ -10,6 +10,7 @@ const DepositsView = React.lazy(() => import('../views/DepositsView'))
 const WithdrawalsView = React.lazy(() => import('../views/WithdrawalsView'))
 const RebatesView = React.lazy(() => import('../views/RebatesView'))
 const UsersView = React.lazy(() => import('../views/UsersView'))
+const KycSubmissionsView = React.lazy(() => import('../views/KycSubmissionsView'))
 
 // Layout wrapper component
 const LayoutWrapper: React.FC = () => {
@@ -54,6 +55,10 @@ export const router = createBrowserRouter([
       {
         path: '/users',
         element: <UsersView />
+      },
+      {
+        path: '/kyc-submissions',
+        element: <KycSubmissionsView />
       }
     ]
   }

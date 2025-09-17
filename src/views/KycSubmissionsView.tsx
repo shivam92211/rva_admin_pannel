@@ -17,48 +17,47 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Search, RefreshCw, ChevronLeft, ChevronRight, Power, PowerOff, Shield, ShieldCheck } from 'lucide-react'
-import { userApi, type User, type PaginatedUsersResponse } from '@/services/userApi'
+import { Search, RefreshCw, ChevronLeft, ChevronRight, FileText, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
+import { kycSubmissionApi, type KycSubmission, type PaginatedKycSubmissionsResponse } from '@/services/kycSubmissionApi'
 
-const UsersView: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([])
+const KycSubmissionsView: React.FC = () => {
+  const [kycSubmissions, setKycSubmissions] = useState<KycSubmission[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [whitelistFilter, setWhitelistFilter] = useState<string>('all')
+  const [levelFilter, setLevelFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const pageSize = 10
 
-
-  const loadUsers = React.useCallback(async () => {
+  const loadKycSubmissions = React.useCallback(async () => {
     setLoading(true)
     try {
-      const response: PaginatedUsersResponse = await userApi.getUsers({
+      const response: PaginatedKycSubmissionsResponse = await kycSubmissionApi.getKycSubmissions({
         page: currentPage,
         limit: pageSize,
         search: searchTerm || undefined,
         status: statusFilter === 'all' ? undefined : statusFilter,
-        whitelist: whitelistFilter === 'all' ? undefined : whitelistFilter
+        level: levelFilter === 'all' ? undefined : levelFilter
       })
 
-      setUsers(response.users)
+      setKycSubmissions(response.kycSubmissions)
       setTotalPages(response.pagination.totalPages)
       setTotal(response.pagination.totalCount)
     } catch (error: any) {
-      console.error('Failed to load users:', error)
-      setUsers([])
+      console.error('Failed to load KYC submissions:', error)
+      setKycSubmissions([])
       setTotalPages(1)
       setTotal(0)
     } finally {
       setLoading(false)
     }
-  }, [currentPage, pageSize, searchTerm, statusFilter, whitelistFilter])
+  }, [currentPage, pageSize, searchTerm, statusFilter, levelFilter])
 
   useEffect(() => {
-    loadUsers()
-  }, [loadUsers])
+    loadKycSubmissions()
+  }, [loadKycSubmissions])
 
   const handleSearch = (value: string) => {
     setSearchTerm(value)
@@ -70,53 +69,33 @@ const UsersView: React.FC = () => {
     setCurrentPage(1) // Reset to first page when filtering
   }
 
-  const handleWhitelistFilter = (value: string) => {
-    setWhitelistFilter(value)
+  const handleLevelFilter = (value: string) => {
+    setLevelFilter(value)
     setCurrentPage(1) // Reset to first page when filtering
   }
 
-  const handleToggleUserStatus = async (userId: string) => {
+  const handleUpdateStatus = async (submissionId: string, newStatus: string, rejectionReason?: string) => {
     try {
       setLoading(true)
-      const result = await userApi.toggleUserStatus(userId)
+      const result = await kycSubmissionApi.updateKycSubmissionStatus(submissionId, {
+        status: newStatus,
+        reviewedBy: 'admin',
+        rejectionReason: newStatus === 'REJECTED' ? rejectionReason : undefined
+      })
 
-      // Update the user in the local state
-      setUsers(prevUsers =>
-        prevUsers.map(user =>
-          user.id === userId
-            ? { ...user, isActive: result.isActive }
-            : user
+      // Update the submission in the local state
+      setKycSubmissions(prevSubmissions =>
+        prevSubmissions.map(submission =>
+          submission.id === submissionId
+            ? { ...submission, status: result.status, reviewedAt: new Date().toISOString(), reviewedBy: 'admin' }
+            : submission
         )
       )
 
       // Optionally show a success message or toast
       console.log(result.message)
     } catch (error: any) {
-      console.error('Failed to toggle user status:', error)
-      // Optionally show error message
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleToggleWithdrawalWhitelist = async (userId: string) => {
-    try {
-      setLoading(true)
-      const result = await userApi.toggleWithdrawalWhitelist(userId)
-
-      // Update the user in the local state
-      setUsers(prevUsers =>
-        prevUsers.map(user =>
-          user.id === userId
-            ? { ...user, withdrawalWhitelist: result.withdrawalWhitelist }
-            : user
-        )
-      )
-
-      // Optionally show a success message or toast
-      console.log(result.message)
-    } catch (error: any) {
-      console.error('Failed to toggle withdrawal whitelist:', error)
+      console.error('Failed to update KYC submission status:', error)
       // Optionally show error message
     } finally {
       setLoading(false)
@@ -133,22 +112,70 @@ const UsersView: React.FC = () => {
     return new Date(dateString).toLocaleDateString()
   }
 
-  const getStatusBadge = (isActive: boolean) => {
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      PENDING: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+      PROCESSING: { color: 'bg-blue-100 text-blue-800', icon: AlertCircle },
+      APPROVED: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
+      REJECTED: { color: 'bg-red-100 text-red-800', icon: XCircle }
+    }
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING
+    const Icon = config.icon
+
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-      }`}>
-        {isActive ? 'Active' : 'Inactive'}
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
+        <Icon className="h-3 w-3 mr-1" />
+        {status}
       </span>
     )
   }
 
-  const getWhitelistBadge = (isWhitelisted: boolean | undefined) => {
+  const getLevelBadge = (level: number) => {
+    const levelColors = {
+      1: 'bg-gray-100 text-gray-800',
+      2: 'bg-orange-100 text-orange-800',
+      3: 'bg-purple-100 text-purple-800'
+    }
+
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        isWhitelisted ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-      }`}>
-        {isWhitelisted ? 'Whitelisted' : 'Not Whitelisted'}
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${levelColors[level as keyof typeof levelColors] || levelColors[1]}`}>
+        Level {level}
+      </span>
+    )
+  }
+
+  const getActionButtons = (submission: KycSubmission) => {
+    if (submission.status === 'PENDING' || submission.status === 'PROCESSING') {
+      return (
+        <div className="flex gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleUpdateStatus(submission.id, 'APPROVED')}
+            disabled={loading}
+            className="hover:bg-green-50 hover:text-green-600 hover:border-green-200"
+          >
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Approve
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleUpdateStatus(submission.id, 'REJECTED', 'Manual review required')}
+            disabled={loading}
+            className="hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+          >
+            <XCircle className="h-4 w-4 mr-1" />
+            Reject
+          </Button>
+        </div>
+      )
+    }
+
+    return (
+      <span className="text-sm text-muted-foreground">
+        {submission.reviewedAt ? `Reviewed ${formatDate(submission.reviewedAt)}` : 'No actions available'}
       </span>
     )
   }
@@ -156,11 +183,11 @@ const UsersView: React.FC = () => {
   return (
     <div className="flex flex-col h-full">
       <PageHeader
-        title="Users"
-        description="Manage system users and their information"
+        title="KYC Submissions"
+        description="Manage and review KYC submission requests"
       >
         <div className="flex gap-2">
-          <Button variant="outline" onClick={loadUsers} disabled={loading}>
+          <Button variant="outline" onClick={loadKycSubmissions} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -173,7 +200,7 @@ const UsersView: React.FC = () => {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search users..."
+                placeholder="Search submissions..."
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="pl-9"
@@ -186,25 +213,28 @@ const UsersView: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Status</SelectItem>
-                  <SelectItem value="active">Active Only</SelectItem>
-                  <SelectItem value="inactive">Inactive Only</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="w-48">
-              <Select value={whitelistFilter} onValueChange={handleWhitelistFilter}>
+              <Select value={levelFilter} onValueChange={handleLevelFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Filter by whitelist" />
+                  <SelectValue placeholder="Filter by level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Whitelist</SelectItem>
-                  <SelectItem value="whitelisted">Whitelisted Only</SelectItem>
-                  <SelectItem value="not_whitelisted">Not Whitelisted</SelectItem>
+                  <SelectItem value="all">Level</SelectItem>
+                  <SelectItem value="1">Level 1</SelectItem>
+                  <SelectItem value="2">Level 2</SelectItem>
+                  <SelectItem value="3">Level 3</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="text-sm text-muted-foreground">
-              {total} user{total !== 1 ? 's' : ''} found
+              {total} submission{total !== 1 ? 's' : ''} found
             </div>
           </div>
 
@@ -213,13 +243,13 @@ const UsersView: React.FC = () => {
               <Table>
                 <TableHeader className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                   <TableRow>
-                    <TableHead>Username</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Phone</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Level</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Whitelist</TableHead>
-                    <TableHead>Created</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Nationality</TableHead>
+                    <TableHead>ID Type</TableHead>
+                    <TableHead>Submitted</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -228,87 +258,47 @@ const UsersView: React.FC = () => {
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-8">
                         <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
-                        Loading users...
+                        Loading KYC submissions...
                       </TableCell>
                     </TableRow>
-                  ) : users.length === 0 ? (
+                  ) : kycSubmissions.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        No users found
+                        No KYC submissions found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.username}</TableCell>
-                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                    kycSubmissions.map((submission) => (
+                      <TableRow key={submission.id}>
                         <TableCell>
-                          {user.firstName || user.lastName
-                            ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-                            : '—'
-                          }
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {user.phoneNumber || user.phone || '—'}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(user.isActive)}
-                        </TableCell>
-                        <TableCell>
-                          {getWhitelistBadge(user.withdrawalWhitelist)}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(user.createdAt)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleToggleUserStatus(user.id)}
-                            disabled={loading}
-                            className={`flex items-center gap-2 ${
-                              user.isActive
-                                ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                                : 'hover:bg-green-50 hover:text-green-600 hover:border-green-200'
-                            }`}
-                          >
-                            {user.isActive ? (
-                              <>
-                                <PowerOff className="h-4 w-4" />
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <Power className="h-4 w-4" />
-                                Activate
-                              </>
-                            )}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleToggleWithdrawalWhitelist(user.id)}
-                              disabled={loading}
-                              className={`flex items-center gap-2 ${
-                                user.withdrawalWhitelist
-                                  ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                                  : 'hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
-                              }`}
-                            >
-                              {user.withdrawalWhitelist ? (
-                                <>
-                                  <Shield className="h-4 w-4" />
-                                  Remove
-                                </>
-                              ) : (
-                                <>
-                                  <ShieldCheck className="h-4 w-4" />
-                                  Whitelist
-                                </>
-                              )}
-                            </Button>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{submission.user.username}</span>
+                            <span className="text-sm text-muted-foreground">{submission.user.email}</span>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {getLevelBadge(submission.level)}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(submission.status)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{submission.firstName} {submission.lastName}</span>
+                            <span className="text-sm text-muted-foreground">{submission.idNumber}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {submission.nationality}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {submission.idType.toUpperCase()}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDate(submission.submittedAt)}
+                        </TableCell>
+                        <TableCell>
+                          {getActionButtons(submission)}
                         </TableCell>
                       </TableRow>
                     ))
@@ -381,4 +371,4 @@ const UsersView: React.FC = () => {
   )
 }
 
-export default UsersView
+export default KycSubmissionsView
