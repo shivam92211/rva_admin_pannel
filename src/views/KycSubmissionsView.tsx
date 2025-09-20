@@ -17,8 +17,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Search, RefreshCw, ChevronLeft, ChevronRight, FileText, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
+import { Search, RefreshCw, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
 import { kycSubmissionApi, type KycSubmission, type PaginatedKycSubmissionsResponse } from '@/services/kycSubmissionApi'
+import { KycDetailsDialog } from '@/components/KycDetailsDialog'
 
 const KycSubmissionsView: React.FC = () => {
   const [kycSubmissions, setKycSubmissions] = useState<KycSubmission[]>([])
@@ -30,6 +31,10 @@ const KycSubmissionsView: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const pageSize = 10
+
+  // KYC details dialog state
+  const [selectedKycSubmission, setSelectedKycSubmission] = useState<KycSubmission | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   const loadKycSubmissions = React.useCallback(async () => {
     setLoading(true)
@@ -105,6 +110,20 @@ const KycSubmissionsView: React.FC = () => {
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page)
+    }
+  }
+
+  const handleKycRowClick = async (kycSubmission: KycSubmission) => {
+    try {
+      setDialogOpen(true)
+
+      // Fetch detailed KYC data
+      const detailedKycSubmission = await kycSubmissionApi.getKycSubmissionById(kycSubmission.id)
+      setSelectedKycSubmission(detailedKycSubmission)
+    } catch (error: any) {
+      console.error('Failed to load KYC submission details:', error)
+      // Show basic KYC data if detailed fetch fails
+      setSelectedKycSubmission(kycSubmission)
     }
   }
 
@@ -269,7 +288,11 @@ const KycSubmissionsView: React.FC = () => {
                     </TableRow>
                   ) : (
                     kycSubmissions.map((submission) => (
-                      <TableRow key={submission.id}>
+                      <TableRow
+                        key={submission.id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleKycRowClick(submission)}
+                      >
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">{submission.user.username}</span>
@@ -298,7 +321,9 @@ const KycSubmissionsView: React.FC = () => {
                           {formatDate(submission.submittedAt)}
                         </TableCell>
                         <TableCell>
-                          {getActionButtons(submission)}
+                          <div onClick={(e) => e.stopPropagation()}>
+                            {getActionButtons(submission)}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -367,6 +392,13 @@ const KycSubmissionsView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* KYC Details Dialog */}
+      <KycDetailsDialog
+        kycSubmission={selectedKycSubmission}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   )
 }

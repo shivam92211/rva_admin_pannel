@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table'
 import { Search, RefreshCw, ChevronLeft, ChevronRight, Power, PowerOff, Shield, ShieldCheck } from 'lucide-react'
 import { userApi, type User, type PaginatedUsersResponse } from '@/services/userApi'
+import { UserDetailsDialog } from '@/components/UserDetailsDialog'
 
 const UsersView: React.FC = () => {
   const [users, setUsers] = useState<User[]>([])
@@ -30,6 +31,11 @@ const UsersView: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const pageSize = 10
+
+  // User details dialog state
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [loadingUserDetails, setLoadingUserDetails] = useState(false)
 
 
   const loadUsers = React.useCallback(async () => {
@@ -126,6 +132,23 @@ const UsersView: React.FC = () => {
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page)
+    }
+  }
+
+  const handleUserRowClick = async (user: User) => {
+    try {
+      setLoadingUserDetails(true)
+      setDialogOpen(true)
+
+      // Fetch detailed user data
+      const detailedUser = await userApi.getUserById(user.id)
+      setSelectedUser(detailedUser)
+    } catch (error: any) {
+      console.error('Failed to load user details:', error)
+      // Show basic user data if detailed fetch fails
+      setSelectedUser(user)
+    } finally {
+      setLoadingUserDetails(false)
     }
   }
 
@@ -239,7 +262,11 @@ const UsersView: React.FC = () => {
                     </TableRow>
                   ) : (
                     users.map((user) => (
-                      <TableRow key={user.id}>
+                      <TableRow
+                        key={user.id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleUserRowClick(user)}
+                      >
                         <TableCell className="font-medium">{user.username}</TableCell>
                         <TableCell className="text-muted-foreground">{user.email}</TableCell>
                         <TableCell>
@@ -261,7 +288,7 @@ const UsersView: React.FC = () => {
                           {formatDate(user.createdAt)}
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                             <Button
                             variant="outline"
                             size="sm"
@@ -377,6 +404,13 @@ const UsersView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* User Details Dialog */}
+      <UserDetailsDialog
+        user={selectedUser}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   )
 }

@@ -3,7 +3,6 @@ import { useBrokerStore } from '@/store/broker'
 import { AppSidebar } from '@/components/AppSidebar'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import APISettingsModal from '@/components/APISettingsModal'
-import ThemeToggle from '@/components/ThemeToggle'
 
 interface DefaultLayoutProps {
   children: React.ReactNode
@@ -46,14 +45,11 @@ const DefaultLayout: React.FC<DefaultLayoutProps> = ({ children }) => {
       </SidebarProvider>
 
       {/* API Settings Modal */}
-      <APISettingsModal 
-        open={showApiModal} 
+      <APISettingsModal
+        open={showApiModal}
         onClose={() => setShowApiModal(false)}
         onSaved={handleApiSettingsSaved}
       />
-      
-      {/* Theme Toggle Button */}
-      <ThemeToggle />
     </div>
   )
 }
