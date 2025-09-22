@@ -1,21 +1,15 @@
-import React, { useState, useMemo } from 'react'
-import { useBrokerStore } from '@/store/broker'
+import React, { useState } from 'react'
 import { AppSidebar } from '@/components/AppSidebar'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
-import APISettingsModal from '@/components/APISettingsModal'
 
 interface DefaultLayoutProps {
   children: React.ReactNode
 }
 
 const DefaultLayout: React.FC<DefaultLayoutProps> = ({ children }) => {
-  const { hasError, isLoading, clearError } = useBrokerStore()
   const [showApiModal, setShowApiModal] = useState(false)
 
-  const apiConnected = useMemo(() => !hasError && !isLoading, [hasError, isLoading])
-
   const handleRefresh = () => {
-    clearError()
     window.location.reload()
   }
 
@@ -35,7 +29,7 @@ const DefaultLayout: React.FC<DefaultLayoutProps> = ({ children }) => {
       
       <SidebarProvider defaultOpen={true}>
         <AppSidebar
-          apiConnected={apiConnected}
+          apiConnected={true}
           onOpenSettings={() => setShowApiModal(true)}
           onRefresh={handleRefresh}
         />
@@ -43,13 +37,6 @@ const DefaultLayout: React.FC<DefaultLayoutProps> = ({ children }) => {
           {children}
         </SidebarInset>
       </SidebarProvider>
-
-      {/* API Settings Modal */}
-      <APISettingsModal
-        open={showApiModal}
-        onClose={() => setShowApiModal(false)}
-        onSaved={handleApiSettingsSaved}
-      />
     </div>
   )
 }

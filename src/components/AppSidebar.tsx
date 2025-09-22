@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   Home,
   Users,
@@ -17,6 +17,7 @@ import {
   UserCheck,
   FileText,
 } from "lucide-react"
+import { useAuthStore } from "../store/authStore"
 
 import {
   Sidebar,
@@ -34,13 +35,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 
-const data = {
-  user: {
-    name: "KuCoin Admin",
-    email: "admin@kucoin.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
+const navMain = [
     {
       title: "Dashboard",
       url: "/",
@@ -81,8 +76,7 @@ const data = {
       url: "/kyc-submissions",
       icon: FileText,
     },
-  ],
-}
+  ]
 
 interface AppSidebarProps {
   apiConnected: boolean
@@ -92,7 +86,14 @@ interface AppSidebarProps {
 
 export function AppSidebar({ apiConnected, onOpenSettings, onRefresh }: AppSidebarProps) {
   const location = useLocation()
+  const navigate = useNavigate()
   const { open } = useSidebar()
+  const { admin, logout } = useAuthStore()
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login')
+  }
   
   return (
     <Sidebar collapsible="icon" variant="sidebar">
@@ -106,9 +107,9 @@ export function AppSidebar({ apiConnected, onOpenSettings, onRefresh }: AppSideb
                 </div>
                 {open && (
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">KuCoin Admin</span>
-                    <span className={`truncate text-xs ${apiConnected ? 'text-green-600' : 'text-red-600'}`}>
-                      {apiConnected ? 'Connected' : 'Disconnected'}
+                    <span className="truncate font-semibold">RVA Admin Panel</span>
+                    <span className="truncate text-xs text-blue-600">
+                      {admin?.role || 'Admin'}
                     </span>
                   </div>
                 )}
@@ -124,7 +125,7 @@ export function AppSidebar({ apiConnected, onOpenSettings, onRefresh }: AppSideb
           {open && <SidebarGroupLabel>Navigation</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {data.navMain.map((item) => (
+              {navMain.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild 
@@ -166,6 +167,16 @@ export function AppSidebar({ apiConnected, onOpenSettings, onRefresh }: AppSideb
                   {open && <span>Refresh</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={handleLogout}
+                  tooltip={!open ? "Logout" : undefined}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {open && <span>Logout</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -181,8 +192,8 @@ export function AppSidebar({ apiConnected, onOpenSettings, onRefresh }: AppSideb
               {open && (
                 <>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{data.user.name}</span>
-                    <span className="truncate text-xs">{data.user.email}</span>
+                    <span className="truncate font-semibold">{admin?.name || 'Admin'}</span>
+                    <span className="truncate text-xs">{admin?.email || 'admin@rva.com'}</span>
                   </div>
                   <ChevronUp className="ml-auto h-4 w-4" />
                 </>

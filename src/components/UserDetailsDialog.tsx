@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,9 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { type User } from '@/services/userApi'
-import { User as UserIcon, Mail, Phone, Calendar, Shield, ShieldCheck, Key, CheckCircle, XCircle } from 'lucide-react'
+import { type User, type UserDevicesResponse, userApi } from '@/services/userApi'
+import { User as UserIcon, Mail, Phone, Calendar, Shield, ShieldCheck, Key, CheckCircle, XCircle, Monitor, Loader2 } from 'lucide-react'
+import DeviceInfo from './DeviceInfo'
 
 interface UserDetailsDialogProps {
   user: User | null
@@ -21,6 +22,30 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   open,
   onOpenChange,
 }) => {
+  const [devices, setDevices] = useState<UserDevicesResponse | null>(null)
+  const [loadingDevices, setLoadingDevices] = useState(false)
+  const [devicesError, setDevicesError] = useState<string | null>(null)
+
+  // Fetch devices when dialog opens and user is selected
+  useEffect(() => {
+    if (open && user) {
+      setLoadingDevices(true)
+      setDevicesError(null)
+
+      userApi.getUserDevices(user.id)
+        .then(setDevices)
+        .catch((error) => {
+          console.error('Failed to fetch user devices:', error)
+          setDevicesError('Failed to load device information')
+        })
+        .finally(() => setLoadingDevices(false))
+    } else {
+      // Reset devices when dialog closes
+      setDevices(null)
+      setDevicesError(null)
+    }
+  }, [open, user])
+
   if (!user) return null
 
   const formatDate = (dateString: string) => {
@@ -217,6 +242,39 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                 </div>
               )}
             </div>
+          </div>
+
+          {/* User Devices */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
+              <Monitor className="h-5 w-5" />
+              User Devices
+            </h3>
+
+            {loadingDevices ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="ml-2">Loading devices...</span>
+              </div>
+            ) : devicesError ? (
+              <div className="text-center py-8 text-red-500">
+                <p>{devicesError}</p>
+              </div>
+            ) : devices && devices.devices.length > 0 ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Found {devices.devices.length} device{devices.devices.length !== 1 ? 's' : ''} associated with this user
+                </p>
+                {devices.devices.map((device) => (
+                  <DeviceInfo key={device.id} device={device} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Monitor className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No devices found for this user</p>
+              </div>
+            )}
           </div>
 
           {/* Profile Picture */}

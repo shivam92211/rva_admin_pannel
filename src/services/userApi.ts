@@ -44,6 +44,38 @@ export interface GetUsersParams {
   whitelist?: string
 }
 
+export interface RefreshToken {
+  id: string
+  isActive: boolean
+  expiresAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DeviceLocation {
+  lat: number
+  lng: number
+  city: string
+  country: string
+}
+
+export interface Device {
+  id: string
+  ipAddress: string | null
+  userAgent: string
+  location: DeviceLocation | null
+  timezone: string | null
+  fingerprint: string
+  refreshTokens: RefreshToken[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface UserDevicesResponse {
+  userId: string
+  devices: Device[]
+}
+
 class UserAPI {
   private client: AxiosInstance
 
@@ -93,6 +125,11 @@ class UserAPI {
 
   async toggleWithdrawalWhitelist(id: string): Promise<{ id: string; withdrawalWhitelist: boolean; message: string }> {
     const response = await this.client.patch(`/users/${id}/toggle-whitelist`)
+    return response.data
+  }
+
+  async getUserDevices(id: string): Promise<UserDevicesResponse> {
+    const response = await this.client.get<UserDevicesResponse>(`/users/${id}/devices`)
     return response.data
   }
 }
