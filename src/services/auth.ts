@@ -49,7 +49,13 @@ export class AuthService {
     try {
       const response = await axios.post<LoginResponse>(
         `${API_BASE_URL}/auth/login`,
-        credentials
+        credentials,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
       );
 
       const { access_token, admin } = response.data;
@@ -74,7 +80,11 @@ export class AuthService {
     try {
       if (this.token) {
         await axios.post(`${API_BASE_URL}/auth/logout`, {}, {
-          headers: { Authorization: `Bearer ${this.token}` }
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          }
         });
       }
     } catch (error) {
@@ -97,7 +107,11 @@ export class AuthService {
 
     try {
       const response = await axios.get(`${API_BASE_URL}/auth/verify`, {
-        headers: { Authorization: `Bearer ${this.token}` }
+        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        }
       });
 
       if (response.data.valid) {
@@ -158,6 +172,8 @@ export class AuthService {
         if (this.token) {
           config.headers.Authorization = `Bearer ${this.token}`;
         }
+        config.withCredentials = true;
+        config.headers['Content-Type'] = config.headers['Content-Type'] || 'application/json';
         return config;
       },
       (error) => Promise.reject(error)
