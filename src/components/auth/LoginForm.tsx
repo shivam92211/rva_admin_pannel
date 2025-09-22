@@ -118,7 +118,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           </button>
         </form>
 
-        <div className="mt-8 text-center">
+        {/* <div className="mt-8 text-center">
           <p className="text-sm text-slate-300">
             Demo Accounts:
           </p>
@@ -128,7 +128,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             <p>Support: support@rva.com</p>
             <p>Password: 123abc</p>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
