@@ -7,16 +7,6 @@ interface DefaultLayoutProps {
 }
 
 const DefaultLayout: React.FC<DefaultLayoutProps> = ({ children }) => {
-  const [showApiModal, setShowApiModal] = useState(false)
-
-  const handleRefresh = () => {
-    window.location.reload()
-  }
-
-  const handleApiSettingsSaved = () => {
-    setShowApiModal(false)
-    handleRefresh()
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -28,11 +18,7 @@ const DefaultLayout: React.FC<DefaultLayoutProps> = ({ children }) => {
       </div>
       
       <SidebarProvider defaultOpen={true}>
-        <AppSidebar
-          apiConnected={true}
-          onOpenSettings={() => setShowApiModal(true)}
-          onRefresh={handleRefresh}
-        />
+        <AppSidebar />
         <SidebarInset>
           {children}
         </SidebarInset>

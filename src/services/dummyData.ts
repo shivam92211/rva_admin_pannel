@@ -22,15 +22,7 @@ export class DummyDataService {
     return {
       level: 3,
       accountSize: 12,
-      maxAccountSize: 50,
-      maxSpotApiCount: 10,
-      maxFuturesApiCount: 5,
-      maxMarginApiCount: 3,
-      totalCommission: "2,847.50",
-      totalRebate: "1,423.75",
-      todayCommission: "156.30",
-      yesterdayCommission: "203.45",
-      uid: "demo_broker_123456"
+      maxAccountSize: 50
     }
   }
 
@@ -40,35 +32,27 @@ export class DummyDataService {
     const demoSubAccounts: SubAccount[] = [
       {
         uid: "demo_sub_001",
-        subName: "Trading Bot Alpha",
-        status: "normal",
-        type: 1,
+        accountName: "Trading Bot Alpha",
         createdAt: Date.now() - 86400000 * 30, // 30 days ago
-        remarks: "Automated trading system for spot markets"
+        level: 1
       },
       {
-        uid: "demo_sub_002", 
-        subName: "Portfolio Manager",
-        status: "normal",
-        type: 1,
+        uid: "demo_sub_002",
+        accountName: "Portfolio Manager",
         createdAt: Date.now() - 86400000 * 15, // 15 days ago
-        remarks: "Long-term investment portfolio management"
+        level: 1
       },
       {
         uid: "demo_sub_003",
-        subName: "Arbitrage Scanner",
-        status: "normal", 
-        type: 1,
+        accountName: "Arbitrage Scanner",
         createdAt: Date.now() - 86400000 * 7, // 7 days ago
-        remarks: "Cross-exchange arbitrage opportunities"
+        level: 1
       },
       {
         uid: "demo_sub_004",
-        subName: "DCA Strategy",
-        status: "locked",
-        type: 1,
+        accountName: "DCA Strategy",
         createdAt: Date.now() - 86400000 * 5, // 5 days ago
-        remarks: "Dollar cost averaging for major cryptocurrencies"
+        level: 1
       }
     ]
 
@@ -88,13 +72,12 @@ export class DummyDataService {
       orderId: "demo_transfer_001",
       currency: "USDT",
       amount: "1000.00",
-      fee: "0.00",
-      status: "SUCCESS",
-      createdAt: Date.now() - 3600000, // 1 hour ago
-      direction: "IN",
       fromUid: "demo_main_account",
+      fromAccountType: "MAIN",
       toUid: "demo_sub_001",
-      remark: "Initial funding for trading bot"
+      toAccountType: "TRADE",
+      status: "SUCCESS",
+      createdAt: Date.now() - 3600000 // 1 hour ago
     }
   }
 
@@ -103,37 +86,37 @@ export class DummyDataService {
     
     return [
       {
-        orderId: "demo_deposit_001",
-        currency: "BTC",
-        amount: "0.5",
-        fee: "0",
-        status: "SUCCESS", 
-        createdAt: Date.now() - 86400000, // 1 day ago
+        uid: "demo_sub_001",
+        hash: "demo_tx_001",
         address: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
-        txId: "demo_tx_001",
-        uid: "demo_sub_001"
-      },
-      {
-        orderId: "demo_deposit_002",
-        currency: "USDT",
-        amount: "5000.00",
-        fee: "0",
+        amount: "0.5",
+        currency: "BTC",
         status: "SUCCESS",
-        createdAt: Date.now() - 86400000 * 3, // 3 days ago
-        address: "0x742d35cc6663c0532925a3b8d5c9de3c",
-        txId: "demo_tx_002", 
-        uid: "demo_sub_002"
+        chain: "BTC",
+        createdAt: Date.now() - 86400000, // 1 day ago
+        updatedAt: Date.now() - 86400000 + 3600000
       },
       {
-        orderId: "demo_deposit_003",
-        currency: "ETH",
-        amount: "2.5",
-        fee: "0",
-        status: "PROCESSING",
-        createdAt: Date.now() - 7200000, // 2 hours ago
+        uid: "demo_sub_002",
+        hash: "demo_tx_002",
         address: "0x742d35cc6663c0532925a3b8d5c9de3c",
-        txId: "demo_tx_003",
-        uid: "demo_sub_003"
+        amount: "5000.00",
+        currency: "USDT",
+        status: "SUCCESS",
+        chain: "TRC20",
+        createdAt: Date.now() - 86400000 * 3, // 3 days ago
+        updatedAt: Date.now() - 86400000 * 3 + 3600000
+      },
+      {
+        uid: "demo_sub_003",
+        hash: "demo_tx_003",
+        address: "0x742d35cc6663c0532925a3b8d5c9de3c",
+        amount: "2.5",
+        currency: "ETH",
+        status: "PROCESSING",
+        chain: "ERC20",
+        createdAt: Date.now() - 7200000, // 2 hours ago
+        updatedAt: Date.now() - 7200000 + 1800000
       }
     ]
   }
@@ -142,18 +125,15 @@ export class DummyDataService {
     await new Promise(resolve => setTimeout(resolve, 400))
     
     return {
-      orderId: params.orderId,
-      currency: "USDT",
+      chain: "TRC20",
+      hash: params.hash,
+      walletTxId: "demo_tx_detailed",
+      uid: "demo_sub_002",
       amount: "5000.00",
-      fee: "0",
+      address: "0x742d35cc6663c0532925a3b8d5c9de3c",
       status: "SUCCESS",
       createdAt: Date.now() - 86400000,
-      address: "0x742d35cc6663c0532925a3b8d5c9de3c",
-      txId: "demo_tx_detailed",
-      uid: "demo_sub_002",
-      confirmations: 12,
-      requiredConfirmations: 12,
-      network: "TRC20"
+      isInner: false
     }
   }
 
@@ -161,17 +141,16 @@ export class DummyDataService {
     await new Promise(resolve => setTimeout(resolve, 450))
     
     return {
-      orderId: params.orderId,
-      currency: "BTC",
-      amount: "0.1",
-      fee: "0.0005",
-      status: "SUCCESS", 
-      createdAt: Date.now() - 3600000,
-      address: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
-      txId: "demo_withdraw_tx",
+      id: params.withdrawalId,
+      chain: "BTC",
+      walletTxId: "demo_withdraw_tx",
       uid: "demo_sub_001",
-      memo: "",
-      network: "BTC"
+      amount: "0.1",
+      address: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+      currency: "BTC",
+      status: "SUCCESS",
+      createdAt: Date.now() - 3600000,
+      updatedAt: Date.now() - 3600000 + 1800000
     }
   }
 

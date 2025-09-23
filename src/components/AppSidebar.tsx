@@ -7,7 +7,6 @@ import {
   Wallet,
   ArrowUpRight,
   TrendingUp,
-  Settings,
   RefreshCw,
   ChevronUp,
   User2,
@@ -78,15 +77,9 @@ const navMain = [
     },
   ]
 
-interface AppSidebarProps {
-  apiConnected: boolean
-  onOpenSettings: () => void
-  onRefresh: () => void
-}
-
-export function AppSidebar({ apiConnected, onOpenSettings, onRefresh }: AppSidebarProps) {
+export function AppSidebar() {
   const location = useLocation()
-  const navigate = useNavigate()
+  const navigate = useNavigate() 
   const { open } = useSidebar()
   const { admin, logout } = useAuthStore()
 
@@ -142,48 +135,20 @@ export function AppSidebar({ apiConnected, onOpenSettings, onRefresh }: AppSideb
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        
-        {open && <Separator />}
-        
-        <SidebarGroup>
-          {open && <SidebarGroupLabel>Settings</SidebarGroupLabel>}
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={onOpenSettings} 
-                  tooltip={!open ? "API Settings" : undefined}
-                >
-                  <Settings className="h-4 w-4" />
-                  {open && <span>API Settings</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={onRefresh} 
-                  tooltip={!open ? "Refresh" : undefined}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  {open && <span>Refresh</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={handleLogout}
-                  tooltip={!open ? "Logout" : undefined}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <LogOut className="h-4 w-4" />
-                  {open && <span>Logout</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
       
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={handleLogout}
+              tooltip={!open ? "Logout" : undefined}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <LogOut className="h-4 w-4" />
+              {open && <span>Logout</span>}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
