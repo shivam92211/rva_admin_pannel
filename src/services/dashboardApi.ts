@@ -6,15 +6,15 @@ import { DummyDataService } from './dummyData'
 export interface DashboardStats {
   totalUsers: number
   totalKycSubmissions: number
-  totalSubAccounts: number
   totalDeposits: number
+  totalDepositAmount: string
   totalWithdrawals: number
-  totalRebates: string
-  todayCommission: string
-  yesterdayCommission: string
+  totalWithdrawalAmount: string
   pendingKyc: number
-  activeSubAccounts: number
-  lockedSubAccounts: number
+  ordersPlaced: number
+  ordersPlacedValue: string
+  ordersExecuted: number
+  ordersExecutedValue: string
 }
 
 export interface ChartData {
@@ -22,7 +22,8 @@ export interface ChartData {
   users: number
   deposits: number
   withdrawals: number
-  commissions: number
+  spotOrdersPlaced: number
+  spotOrdersExecuted: number
 }
 
 export interface RevenueData {
@@ -47,38 +48,8 @@ class DashboardAPI {
 
   async getDashboardStats(): Promise<DashboardStats> {
     try {
-      // Load all data in parallel
-      const [usersData, kycData, subAccountsData, depositsData, brokerInfo] = await Promise.all([
-        userApi.getUsers({ limit: 1 }).catch(() => ({ users: [], pagination: { totalCount: 0 } })),
-        kycSubmissionApi.getKycSubmissions({ limit: 1 }).catch(() => ({ kycSubmissions: [], pagination: { totalCount: 0 } })),
-        DummyDataService.getSubAccounts({ pageSize: 50 }),
-        DummyDataService.getDepositList(),
-        DummyDataService.getBrokerInfo({ beginTime: '', endTime: '', bizType: 1 })
-      ])
-
-      // Get pending KYC count
-      const pendingKycData = await kycSubmissionApi.getKycSubmissions({
-        limit: 1,
-        status: 'pending'
-      }).catch(() => ({ kycSubmissions: [], pagination: { totalCount: 0 } }))
-
-      // Calculate active and locked sub accounts
-      const activeSubAccounts = subAccountsData.items.filter(acc => acc.status === 'normal').length
-      const lockedSubAccounts = subAccountsData.items.filter(acc => acc.status === 'locked').length
-
-      return {
-        totalUsers: usersData.pagination.totalCount,
-        totalKycSubmissions: kycData.pagination.totalCount,
-        totalSubAccounts: subAccountsData.totalNum,
-        totalDeposits: depositsData.filter(d => d.status === 'SUCCESS').length,
-        totalWithdrawals: Math.floor(depositsData.length * 0.7), // Mock calculation
-        totalRebates: brokerInfo.totalRebate,
-        todayCommission: brokerInfo.todayCommission,
-        yesterdayCommission: brokerInfo.yesterdayCommission,
-        pendingKyc: pendingKycData.pagination.totalCount,
-        activeSubAccounts,
-        lockedSubAccounts
-      }
+      const response = await this.client.get('/dashboard/stats')
+      return response.data
     } catch (error) {
       console.error('Failed to load dashboard stats:', error)
       throw error
@@ -86,24 +57,13 @@ class DashboardAPI {
   }
 
   async getActivityChartData(): Promise<ChartData[]> {
-    // Generate mock data for the last 7 days
-    const chartData: ChartData[] = []
-    const today = new Date()
-
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today)
-      date.setDate(date.getDate() - i)
-
-      chartData.push({
-        date: date.toISOString().split('T')[0],
-        users: Math.floor(Math.random() * 50) + 10,
-        deposits: Math.floor(Math.random() * 20) + 5,
-        withdrawals: Math.floor(Math.random() * 15) + 2,
-        commissions: Math.floor(Math.random() * 500) + 100
-      })
+    try {
+      const response = await this.client.get('/dashboard/activity')
+      return response.data
+    } catch (error) {
+      console.error('Failed to load activity chart data:', error)
+      throw error
     }
-
-    return chartData
   }
 
   async getRevenueChartData(): Promise<RevenueData[]> {

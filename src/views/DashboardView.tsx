@@ -1,27 +1,25 @@
 import React, { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, FileCheck, Building2, ArrowUpDown, ArrowUpRight, ArrowDownLeft, Coins, TrendingUp, AlertCircle } from 'lucide-react'
-import { Line, Bar } from 'react-chartjs-2'
+import { Users, FileCheck, ArrowUpRight, ArrowDownLeft, ShoppingCart, CheckCircle } from 'lucide-react'
+import { Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
-  BarElement,
   Title,
   Tooltip,
   Legend,
 } from 'chart.js'
-import { dashboardApi, type DashboardStats, type ChartData, type RevenueData } from '@/services/dashboardApi'
+import { dashboardApi, type DashboardStats, type ChartData } from '@/services/dashboardApi'
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
-  BarElement,
   Title,
   Tooltip,
   Legend
@@ -30,7 +28,6 @@ ChartJS.register(
 const DashboardView: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [activityData, setActivityData] = useState<ChartData[]>([])
-  const [revenueData, setRevenueData] = useState<RevenueData[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -42,15 +39,13 @@ const DashboardView: React.FC = () => {
       setIsLoading(true)
 
       // Load all data in parallel
-      const [dashboardStats, activityChartData, revenueChartData] = await Promise.all([
+      const [dashboardStats, activityChartData] = await Promise.all([
         dashboardApi.getDashboardStats(),
-        dashboardApi.getActivityChartData(),
-        dashboardApi.getRevenueChartData()
+        dashboardApi.getActivityChartData()
       ])
 
       setStats(dashboardStats)
       setActivityData(activityChartData)
-      setRevenueData(revenueChartData)
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
     } finally {
@@ -73,40 +68,36 @@ const DashboardView: React.FC = () => {
       subValue: `${stats.pendingKyc} pending`
     },
     {
-      title: 'Sub Accounts',
-      value: stats.totalSubAccounts.toLocaleString(),
-      icon: Building2,
-      description: 'Total sub accounts',
-      subValue: `${stats.activeSubAccounts} active, ${stats.lockedSubAccounts} locked`
-    },
-    {
       title: 'Deposits',
       value: stats.totalDeposits.toLocaleString(),
       icon: ArrowDownLeft,
       description: 'Successful deposits',
-      color: 'text-green-600'
+      color: 'text-green-600',
+    subValue: `Total: ${parseFloat(stats.totalDepositAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} ETH`
     },
     {
       title: 'Withdrawals',
       value: stats.totalWithdrawals.toLocaleString(),
       icon: ArrowUpRight,
       description: 'Completed withdrawals',
-      color: 'text-red-600'
+      color: 'text-red-600',
+      subValue: `Total: ${parseFloat(stats.totalWithdrawalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} ETH`
     },
     {
-      title: 'Total Rebates',
-      value: `$${stats.totalRebates}`,
-      icon: Coins,
-      description: 'Total rebates earned',
-      color: 'text-blue-600'
+      title: 'Orders Placed (24h)',
+      value: stats.ordersPlaced.toLocaleString(),
+      icon: ShoppingCart,
+      description: 'Spot orders placed',
+      color: 'text-blue-600',
+      subValue: `Value: ${parseFloat(stats.ordersPlacedValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETH`
     },
     {
-      title: "Today's Commission",
-      value: `$${stats.todayCommission}`,
-      icon: TrendingUp,
-      description: 'Commission earned today',
+      title: 'Orders Executed (24h)',
+      value: stats.ordersExecuted.toLocaleString(),
+      icon: CheckCircle,
+      description: 'Orders completed',
       color: 'text-purple-600',
-      subValue: `Yesterday: $${stats.yesterdayCommission}`
+      subValue: `Value: ${parseFloat(stats.ordersExecutedValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETH`
     }
   ] : []
 
@@ -140,6 +131,7 @@ const DashboardView: React.FC = () => {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: {
           position: 'top' as const,
@@ -153,24 +145,31 @@ const DashboardView: React.FC = () => {
     },
   }
 
-  const revenueChartConfig = {
+  const spotOrdersChartConfig = {
     data: {
-      labels: revenueData.map(d => d.month),
+      labels: activityData.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
       datasets: [
         {
-          label: 'Commissions',
-          data: revenueData.map(d => d.commissions),
-          backgroundColor: 'rgba(147, 51, 234, 0.8)',
+          label: 'Orders Placed',
+          data: activityData.map(d => d.spotOrdersPlaced),
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+          fill: true,
+          tension: 0.4,
         },
         {
-          label: 'Rebates',
-          data: revenueData.map(d => d.rebates),
-          backgroundColor: 'rgba(59, 130, 246, 0.8)',
+          label: 'Orders Executed',
+          data: activityData.map(d => d.spotOrdersExecuted),
+          borderColor: 'rgb(147, 51, 234)',
+          backgroundColor: 'rgba(147, 51, 234, 0.5)',
+          fill: true,
+          tension: 0.4,
         }
       ]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: {
           position: 'top' as const,
@@ -179,10 +178,12 @@ const DashboardView: React.FC = () => {
       scales: {
         y: {
           beginAtZero: true,
+          stacked: false,
         },
       },
     },
   }
+
 
   return (
     <div className="flex flex-col h-full">
@@ -194,7 +195,7 @@ const DashboardView: React.FC = () => {
         <div className="p-6 space-y-6">
 
         {/* Statistics Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {statCards.map((card, index) => {
             const IconComponent = card.icon
             return (
@@ -249,19 +250,19 @@ const DashboardView: React.FC = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Revenue Trends</CardTitle>
-              <CardDescription>Commission and rebate trends (Last 6 months)</CardDescription>
+              <CardTitle>Spot Orders Overview</CardTitle>
+              <CardDescription>Orders placed vs executed (Last 7 days)</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <div className="h-64 bg-muted animate-pulse rounded" />
-              ) : revenueData.length > 0 ? (
+              ) : activityData.length > 0 ? (
                 <div className="h-64">
-                  <Bar {...revenueChartConfig} />
+                  <Line {...spotOrdersChartConfig} />
                 </div>
               ) : (
                 <div className="text-center text-muted-foreground py-8">
-                  No revenue data available
+                  No spot order data available
                 </div>
               )}
             </CardContent>

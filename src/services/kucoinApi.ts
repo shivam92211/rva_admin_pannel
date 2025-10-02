@@ -1,5 +1,4 @@
-import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
-import CryptoJS from 'crypto-js'
+import axios, { type AxiosInstance } from 'axios'
 import type {
   ApiResponse,
   BrokerInfo,
@@ -27,235 +26,138 @@ import type {
 
 class KuCoinBrokerAPI {
   private client: AxiosInstance
-  private brokerApiKey: string
-  private brokerApiSecret: string
-  private brokerApiPassphrase: string
-  private brokerPartnerKey: string
-  private brokerName: string
+  private baseURL: string
 
   constructor() {
-    // Get broker credentials from environment variables or localStorage
-    this.brokerApiKey = import.meta.env.VITE_KUCOIN_BROKER_API_KEY || 
-                       localStorage.getItem('kucoin_broker_api_key') || ''
-    this.brokerApiSecret = import.meta.env.VITE_KUCOIN_BROKER_API_SECRET || 
-                          localStorage.getItem('kucoin_broker_api_secret') || ''
-    this.brokerApiPassphrase = import.meta.env.VITE_KUCOIN_BROKER_API_PASSPHRASE || 
-                              localStorage.getItem('kucoin_broker_api_passphrase') || ''
-    this.brokerPartnerKey = import.meta.env.VITE_KUCOIN_BROKER_PARTNER_KEY || 
-                           localStorage.getItem('kucoin_broker_partner_key') || ''
-    this.brokerName = import.meta.env.VITE_KUCOIN_BROKER_NAME || 
-                     localStorage.getItem('kucoin_broker_name') || ''
+    // Use the backend API URL instead of KuCoin API directly
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
     this.client = axios.create({
-      baseURL: 'https://api.kucoin.com',
+      baseURL: `${this.baseURL}/kucoin`,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      withCredentials: true
     })
 
     this.setupInterceptors()
   }
 
-  private generateSignature(timestamp: string, method: string, endpoint: string, body: string, secret: string): string {
-    const str = timestamp + method.toUpperCase() + endpoint + body
-    return CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(str, secret))
-  }
-
-  private generatePartnerSignature(timestamp: string, partnerKey: string, apiKey: string): string {
-    const str = timestamp + partnerKey + apiKey
-    return CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(str, partnerKey))
-  }
-
   private setupInterceptors() {
+    // Request interceptor to add auth token
     this.client.interceptors.request.use(
       (config) => {
-        if (this.brokerApiKey && this.brokerApiSecret && this.brokerApiPassphrase) {
-          const timestamp = Date.now().toString()
-          const method = (config.method || 'get').toUpperCase()
-          const endpoint = config.url || ''
-          
-          // Handle query parameters for GET requests
-          let fullEndpoint = endpoint
-          if (config.params && Object.keys(config.params).length > 0) {
-            const searchParams = new URLSearchParams(config.params)
-            fullEndpoint = `${endpoint}?${searchParams.toString()}`
-          }
-          
-          const body = config.data ? JSON.stringify(config.data) : ''
-          const signature = this.generateSignature(timestamp, method, fullEndpoint, body, this.brokerApiSecret)
-          
-          // Encrypt the passphrase with the secret
-          const encryptedPassphrase = CryptoJS.enc.Base64.stringify(
-            CryptoJS.HmacSHA256(this.brokerApiPassphrase, this.brokerApiSecret)
-          )
-
-          // Standard KuCoin headers
-          config.headers['KC-API-KEY'] = this.brokerApiKey
-          config.headers['KC-API-SIGN'] = signature
-          config.headers['KC-API-TIMESTAMP'] = timestamp
-          config.headers['KC-API-PASSPHRASE'] = encryptedPassphrase
-          config.headers['KC-API-KEY-VERSION'] = '2'
-
-          // Broker-specific headers
-          if (this.brokerPartnerKey) {
-            const partnerSign = this.generatePartnerSignature(timestamp, this.brokerPartnerKey, this.brokerApiKey)
-            config.headers['KC-API-PARTNER'] = this.brokerPartnerKey
-            config.headers['KC-API-PARTNER-SIGN'] = partnerSign
-            config.headers['KC-API-PARTNER-VERIFY'] = 'true'
-          }
-
-          if (this.brokerName) {
-            config.headers['KC-BROKER-NAME'] = this.brokerName
-          }
+        const token = localStorage.getItem('auth_token')
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`
         }
-
         return config
       },
       (error) => Promise.reject(error)
     )
 
+    // Response interceptor for error handling
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => response.data, // Return just the data
       (error) => {
         if (error.response?.status === 401) {
-          console.error('Authentication failed. Please check your API credentials.')
+          console.error('Authentication failed. Please log in again.')
+          // Optionally redirect to login page
+          window.location.href = '/login'
         }
-        return Promise.reject(error)
+        throw new Error(error.response?.data?.message || error.message || 'API request failed')
       }
     )
   }
 
-  // Check if broker credentials are properly configured
-  isBrokerConfigured(): boolean {
-    return !!(this.brokerApiKey && this.brokerApiSecret && this.brokerApiPassphrase)
-  }
-
-  getBrokerCredentials() {
-    return {
-      apiKey: this.brokerApiKey,
-      hasSecret: !!this.brokerApiSecret,
-      hasPassphrase: !!this.brokerApiPassphrase,
-      partnerKey: this.brokerPartnerKey,
-      brokerName: this.brokerName,
-      isConfigured: this.isBrokerConfigured()
+  // Check if broker credentials are properly configured (now checks backend)
+  async isBrokerConfigured(): Promise<boolean> {
+    try {
+      const credentials = await this.getBrokerCredentials()
+      return credentials.isConfigured
+    } catch {
+      return false
     }
   }
 
-  // Refresh credentials (useful after user updates settings)
-  refreshCredentials() {
-    this.brokerApiKey = import.meta.env.VITE_KUCOIN_BROKER_API_KEY || 
-                       localStorage.getItem('kucoin_broker_api_key') || ''
-    this.brokerApiSecret = import.meta.env.VITE_KUCOIN_BROKER_API_SECRET || 
-                          localStorage.getItem('kucoin_broker_api_secret') || ''
-    this.brokerApiPassphrase = import.meta.env.VITE_KUCOIN_BROKER_API_PASSPHRASE || 
-                              localStorage.getItem('kucoin_broker_api_passphrase') || ''
-    this.brokerPartnerKey = import.meta.env.VITE_KUCOIN_BROKER_PARTNER_KEY || 
-                           localStorage.getItem('kucoin_broker_partner_key') || ''
-    this.brokerName = import.meta.env.VITE_KUCOIN_BROKER_NAME || 
-                     localStorage.getItem('kucoin_broker_name') || ''
+  async getBrokerCredentials() {
+    const response = await this.client.get('/broker/credentials')
+    return response
   }
 
   async getBrokerInfo(params: GetBrokerInfoRequest): Promise<BrokerInfo> {
-    const response = await this.client.get<ApiResponse<BrokerInfo>>('/api/v1/broker/nd/info', {
-      params
-    })
-    return response.data.data
+    const response = await this.client.get('/broker/info', { params })
+    return response
   }
 
   async createSubAccount(data: CreateSubAccountRequest): Promise<SubAccount> {
-    const response = await this.client.post<ApiResponse<SubAccount>>('/api/v1/broker/nd/account', data)
-    return response.data.data
+    const response = await this.client.post('/sub-accounts', data)
+    return response
   }
 
   async getSubAccounts(params?: GetSubAccountsRequest): Promise<PaginatedResponse<SubAccount>> {
-    const response = await this.client.get<ApiResponse<PaginatedResponse<SubAccount>>>(
-      '/api/v1/broker/nd/account',
-      { params }
-    )
-    return response.data.data
+    const response = await this.client.get('/sub-accounts', { params })
+    return response
   }
 
   async createApiKey(data: CreateApiKeyRequest): Promise<ApiKeyInfo> {
-    const response = await this.client.post<ApiResponse<ApiKeyInfo>>(
-      '/api/v1/broker/nd/account/apikey',
-      data
-    )
-    return response.data.data
+    const response = await this.client.post('/api-keys', data)
+    return response
   }
 
   async getApiKeys(params: GetApiKeysRequest): Promise<ApiKeyInfo[]> {
-    const response = await this.client.get<ApiResponse<ApiKeyInfo[]>>(
-      '/api/v1/broker/nd/account/apikey',
-      { params }
-    )
-    return response.data.data
+    const response = await this.client.get('/api-keys', { params })
+    return response
   }
 
   async modifyApiKey(data: ModifyApiKeyRequest): Promise<ApiKeyInfo> {
-    const response = await this.client.post<ApiResponse<ApiKeyInfo>>(
-      '/api/v1/broker/nd/account/update-apikey',
-      data
-    )
-    return response.data.data
+    const response = await this.client.post('/api-keys/modify', data)
+    return response
   }
 
   async deleteApiKey(uid: string, apiKey: string): Promise<boolean> {
-    const response = await this.client.delete<ApiResponse<boolean>>(
-      '/api/v1/broker/nd/account/apikey',
-      {
-        params: { uid, apiKey }
-      }
-    )
-    return response.data.data
+    const response = await this.client.delete('/api-keys', {
+      params: { uid, apiKey }
+    })
+    return response
   }
 
   async transfer(data: TransferRequest): Promise<TransferResponse> {
-    const response = await this.client.post<ApiResponse<TransferResponse>>(
-      '/api/v1/broker/nd/transfer',
-      data
-    )
-    return response.data.data
+    const response = await this.client.post('/transfer', data)
+    return response
   }
 
   async getTransferHistory(params: GetTransferHistoryRequest): Promise<TransferDetail> {
-    const response = await this.client.get<ApiResponse<TransferDetail>>(
-      '/api/v3/broker/nd/transfer/detail',
-      { params }
-    )
-    return response.data.data
+    const response = await this.client.get('/transfer/history', { params })
+    return response
   }
 
   async getDepositList(params?: GetDepositListRequest): Promise<DepositRecord[]> {
-    const response = await this.client.get<ApiResponse<DepositRecord[]>>(
-      '/api/v1/asset/ndbroker/deposit/list',
-      { params }
-    )
-    return response.data.data
+    const response = await this.client.get('/deposits', { params })
+    return response
   }
 
   async getDepositDetail(params: GetDepositDetailRequest): Promise<DepositDetail> {
-    const response = await this.client.get<ApiResponse<DepositDetail>>(
-      '/api/v3/broker/nd/deposit/detail',
-      { params }
-    )
-    return response.data.data
+    const response = await this.client.get('/deposits/detail', { params })
+    return response
   }
 
   async getWithdrawDetail(params: GetWithdrawDetailRequest): Promise<WithdrawalDetail> {
-    const response = await this.client.get<ApiResponse<WithdrawalDetail>>(
-      '/api/v3/broker/nd/withdraw/detail',
-      { params }
-    )
-    return response.data.data
+    const response = await this.client.get('/withdrawals/detail', { params })
+    return response
   }
 
   async downloadBrokerRebate(params: RebateDownloadRequest): Promise<string> {
-    const response = await this.client.get<ApiResponse<string>>(
-      '/api/v1/broker/nd/rebate/download',
-      { params }
-    )
-    return response.data.data
+    const response = await this.client.get('/rebate/download', { params })
+    return response
+  }
+
+  // Legacy method for backward compatibility - now just returns the configured status
+  refreshCredentials() {
+    // This method is no longer needed since credentials are handled by the backend
+    // Keeping it for backward compatibility in case any components still call it
+    console.warn('refreshCredentials() is deprecated. Credentials are now managed by the backend.')
   }
 }
 

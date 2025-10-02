@@ -7,81 +7,84 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Search, RefreshCw, Eye, ExternalLink } from 'lucide-react'
 import { format } from 'date-fns'
-import { kucoinApi } from '@/services/kucoinApi'
-import type { TransactionStatus } from '@/types/kucoin'
 
 export const DepositHistoryTable: React.FC = () => {
-  const { 
-    deposits, 
-    selectedDeposit, 
-    isLoading, 
-    fetchDeposits, 
-    fetchDepositDetail, 
-    loadDummyData, 
-    clearSelectedDeposit 
+  const {
+    deposits,
+    selectedDeposit,
+    isLoading,
+    fetchDeposits,
+    fetchDepositDetail,
+    clearSelectedDeposit
   } = useDepositStore()
-  
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<TransactionStatus | 'all'>('all')
-  const [currencyFilter, setCurrencyFilter] = useState<string>('all')
-  const [chainFilter, setChainFilter] = useState<string>('all')
 
-  // Get unique values for filters
-  const availableCurrencies = Array.from(
-    new Set(deposits.map(d => d.currency))
-  ).sort()
-  
-  const availableChains = Array.from(
-    new Set(deposits.map(d => d.chain))
-  ).sort()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
 
   // Filter deposits based on search and filters
   const filteredDeposits = deposits.filter(deposit => {
-    const matchesSearch = searchTerm === '' || 
-      deposit.hash.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      deposit.currency.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = searchTerm === '' ||
+      (deposit.walletTxId && deposit.walletTxId.toLowerCase().includes(searchTerm.toLowerCase())) ||
       deposit.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      deposit.uid.toLowerCase().includes(searchTerm.toLowerCase())
+      deposit.currency.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (deposit.user?.email && deposit.user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (deposit.user?.username && deposit.user.username.toLowerCase().includes(searchTerm.toLowerCase()))
 
     const matchesStatus = statusFilter === 'all' || deposit.status === statusFilter
-    const matchesCurrency = currencyFilter === 'all' || deposit.currency === currencyFilter
-    const matchesChain = chainFilter === 'all' || deposit.chain === chainFilter
 
-    return matchesSearch && matchesStatus && matchesCurrency && matchesChain
+    return matchesSearch && matchesStatus
   })
 
   const handleRefresh = () => {
-    if (kucoinApi.isBrokerConfigured()) {
-      fetchDeposits()
-    } else {
-      loadDummyData()
-    }
+    fetchDeposits()
   }
 
-  const handleViewDetails = (currency: string, hash: string) => {
-    fetchDepositDetail(currency, hash)
+  const handleViewDetails = (id: string) => {
+    fetchDepositDetail(id)
   }
 
   const truncateHash = (hash: string) => {
+    if (!hash) return 'N/A'
     return `${hash.slice(0, 6)}...${hash.slice(-6)}`
   }
 
   const truncateAddress = (address: string) => {
+    if (!address) return 'N/A'
     if (address.length <= 20) return address
     return `${address.slice(0, 8)}...${address.slice(-8)}`
   }
 
-  const getBlockExplorerUrl = (chain: string, hash: string) => {
+  const getBlockExplorerUrl = (chain: string, txId: string) => {
+    if (!txId) return '#'
     const explorers: Record<string, string> = {
-      'BTC': `https://blockstream.info/tx/${hash}`,
-      'ETH': `https://etherscan.io/tx/${hash}`,
-      'ERC20': `https://etherscan.io/tx/${hash}`,
-      'TRC20': `https://tronscan.org/#/transaction/${hash}`,
-      'BEP20': `https://bscscan.com/tx/${hash}`,
-      'ADA': `https://cardanoscan.io/transaction/${hash}`,
-      'DOT': `https://polkascan.io/polkadot/transaction/${hash}`
+      'BTC': `https://blockstream.info/tx/${txId}`,
+      'ETH': `https://etherscan.io/tx/${txId}`,
+      'ERC20': `https://etherscan.io/tx/${txId}`,
+      'TRC20': `https://tronscan.org/#/transaction/${txId}`,
+      'BEP20': `https://bscscan.com/tx/${txId}`,
     }
-    return explorers[chain] || '#'
+    return explorers[chain] || `https://etherscan.io/tx/${txId}`
+  }
+
+  const formatTimestamp = (timestamp: string | number) => {
+    if (!timestamp) return 'N/A'
+    try {
+      // Handle both string and number timestamps
+      const numTimestamp = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp
+
+      // Check if it's a valid number
+      if (isNaN(numTimestamp)) return 'N/A'
+
+      const date = new Date(numTimestamp)
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) return 'N/A'
+
+      return format(date, 'MMM dd, yyyy HH:mm')
+    } catch (error) {
+      console.error('Error formatting timestamp:', timestamp, error)
+      return 'N/A'
+    }
   }
 
   if (isLoading && deposits.length === 0) {
@@ -111,18 +114,18 @@ export const DepositHistoryTable: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <div className="relative">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="relative col-span-2">
           <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <Input
-            placeholder="Search deposits..."
+            placeholder="Search by txId, address, currency, user email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
           />
         </div>
 
-        <Select value={statusFilter} onValueChange={(value: TransactionStatus | 'all') => setStatusFilter(value)}>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
@@ -133,38 +136,10 @@ export const DepositHistoryTable: React.FC = () => {
             <SelectItem value="FAILURE">Failed</SelectItem>
           </SelectContent>
         </Select>
+      </div>
 
-        <Select value={currencyFilter} onValueChange={setCurrencyFilter}>
-          <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-            <SelectValue placeholder="Filter by currency" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Currencies</SelectItem>
-            {availableCurrencies.map(currency => (
-              <SelectItem key={currency} value={currency}>
-                {currency}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={chainFilter} onValueChange={setChainFilter}>
-          <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-            <SelectValue placeholder="Filter by chain" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Chains</SelectItem>
-            {availableChains.map(chain => (
-              <SelectItem key={chain} value={chain}>
-                {chain}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <div className="flex items-center text-sm text-gray-400">
-          {filteredDeposits.length} of {deposits.length} deposits
-        </div>
+      <div className="mb-4 text-sm text-gray-400">
+        Showing {filteredDeposits.length} of {deposits.length} deposits
       </div>
 
       {/* Table */}
@@ -172,8 +147,8 @@ export const DepositHistoryTable: React.FC = () => {
         {filteredDeposits.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-400">
-              {deposits.length === 0 
-                ? 'No deposits found. Deposits will appear here when received.' 
+              {deposits.length === 0
+                ? 'No deposits found. Deposits will appear here when received.'
                 : 'No deposits match your current filters.'}
             </p>
           </div>
@@ -181,11 +156,11 @@ export const DepositHistoryTable: React.FC = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-700">
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Transaction Hash</th>
+                <th className="text-left py-3 px-4 text-gray-300 font-medium">Wallet TX ID</th>
+                <th className="text-left py-3 px-4 text-gray-300 font-medium">User</th>
                 <th className="text-left py-3 px-4 text-gray-300 font-medium">Currency</th>
                 <th className="text-left py-3 px-4 text-gray-300 font-medium">Amount</th>
                 <th className="text-left py-3 px-4 text-gray-300 font-medium">Chain</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Address</th>
                 <th className="text-left py-3 px-4 text-gray-300 font-medium">Status</th>
                 <th className="text-left py-3 px-4 text-gray-300 font-medium">Created</th>
                 <th className="text-left py-3 px-4 text-gray-300 font-medium">Actions</th>
@@ -193,20 +168,34 @@ export const DepositHistoryTable: React.FC = () => {
             </thead>
             <tbody>
               {filteredDeposits.map((deposit) => (
-                <tr key={deposit.hash} className="border-b border-gray-700/50 hover:bg-gray-700/20">
+                <tr key={deposit.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-2">
                       <code className="text-sm text-blue-300 bg-gray-700/50 px-2 py-1 rounded">
-                        {truncateHash(deposit.hash)}
+                        {truncateHash(deposit.walletTxId || deposit.id)}
                       </code>
-                      <a
-                        href={getBlockExplorerUrl(deposit.chain, deposit.hash)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-blue-400 transition-colors"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
+                      {deposit.walletTxId && (
+                        <a
+                          href={getBlockExplorerUrl(deposit.chain, deposit.walletTxId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-400 hover:text-blue-400 transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="text-sm">
+                      <div className="text-white font-medium">
+                        {deposit.user?.email || 'N/A'}
+                      </div>
+                      {deposit.user?.username && (
+                        <div className="text-xs text-gray-400">
+                          @{deposit.user.username}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="py-3 px-4">
@@ -216,7 +205,9 @@ export const DepositHistoryTable: React.FC = () => {
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm font-mono text-green-300">
-                      {parseFloat(deposit.amount).toLocaleString()}
+                      {deposit.amount && !isNaN(parseFloat(deposit.amount))
+                        ? parseFloat(deposit.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })
+                        : 'N/A'}
                     </span>
                   </td>
                   <td className="py-3 px-4">
@@ -225,21 +216,16 @@ export const DepositHistoryTable: React.FC = () => {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <code className="text-xs text-gray-300">
-                      {truncateAddress(deposit.address)}
-                    </code>
-                  </td>
-                  <td className="py-3 px-4">
                     <DepositStatusBadge status={deposit.status} />
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-xs text-gray-400">
-                      {format(new Date(deposit.createdAt), 'MMM dd, yyyy HH:mm')}
+                      {formatTimestamp(deposit.createdAt)}
                     </span>
                   </td>
                   <td className="py-3 px-4">
                     <Button
-                      onClick={() => handleViewDetails(deposit.currency, deposit.hash)}
+                      onClick={() => handleViewDetails(deposit.id)}
                       variant="ghost"
                       size="sm"
                       className="text-gray-400 hover:text-white"
@@ -254,80 +240,163 @@ export const DepositHistoryTable: React.FC = () => {
         )}
       </div>
 
-      {deposits.length > 0 && (
-        <div className="mt-4 text-xs text-gray-500 border-t border-gray-700 pt-4">
-          <p>
-            Deposit history shows the latest deposit transactions. Use the search and filters to find specific deposits.
-            {!isLoading && deposits.length > 0 && deposits[0].hash.startsWith('0x') && (
-              <span className="ml-2 text-yellow-500">
-                ⚠ Demo data is being displayed
-              </span>
-            )}
-          </p>
-        </div>
-      )}
-
       {/* Deposit Detail Modal */}
       <Dialog open={!!selectedDeposit} onOpenChange={() => clearSelectedDeposit()}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Deposit Details</DialogTitle>
           </DialogHeader>
           {selectedDeposit && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Transaction Hash</label>
-                  <p className="font-mono text-sm break-all">{selectedDeposit.hash}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Wallet TX ID</label>
-                  <p className="font-mono text-sm">{selectedDeposit.walletTxId}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Currency</label>
-                  <p className="text-sm font-medium">{selectedDeposit.uid}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Amount</label>
-                  <p className="text-sm font-mono text-green-300">
-                    {parseFloat(selectedDeposit.amount).toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Chain</label>
-                  <p className="text-sm">{selectedDeposit.chain}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Status</label>
-                  <div className="mt-1">
-                    <DepositStatusBadge status={selectedDeposit.status} />
+            <div className="space-y-6">
+              {/* Transaction Information */}
+              <div>
+                <h3 className="text-md font-semibold text-white mb-3 border-b border-gray-700 pb-2">Transaction Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Deposit ID</label>
+                    <p className="font-mono text-sm break-all">{selectedDeposit.id}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Wallet TX ID</label>
+                    <p className="font-mono text-sm break-all">{selectedDeposit.walletTxId || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Currency</label>
+                    <p className="text-sm font-medium">{selectedDeposit.currency}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Chain</label>
+                    <p className="text-sm">{selectedDeposit.chain}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Amount</label>
+                    <p className="text-sm font-mono text-green-300">
+                      {selectedDeposit.amount && !isNaN(parseFloat(selectedDeposit.amount))
+                        ? `${parseFloat(selectedDeposit.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} ${selectedDeposit.currency}`
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Fee</label>
+                    <p className="text-sm font-mono">
+                      {selectedDeposit.fee && !isNaN(parseFloat(selectedDeposit.fee))
+                        ? `${parseFloat(selectedDeposit.fee).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} ${selectedDeposit.currency}`
+                        : '0.00'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Status</label>
+                    <div className="mt-1">
+                      <DepositStatusBadge status={selectedDeposit.status} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Type</label>
+                    <p className="text-sm">{selectedDeposit.isInner ? 'Internal Transfer' : 'External Deposit'}</p>
                   </div>
                 </div>
-                <div className="col-span-2">
-                  <label className="text-sm font-medium text-gray-400">Deposit Address</label>
-                  <p className="font-mono text-sm break-all">{selectedDeposit.address}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Created At</label>
-                  <p className="text-sm">{format(new Date(selectedDeposit.createdAt), 'MMM dd, yyyy HH:mm:ss')}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Type</label>
-                  <p className="text-sm">{selectedDeposit.isInner ? 'Internal' : 'External'}</p>
+              </div>
+
+              {/* User Information */}
+              <div>
+                <h3 className="text-md font-semibold text-white mb-3 border-b border-gray-700 pb-2">User Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Email</label>
+                    <p className="text-sm">{selectedDeposit.user?.email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Username</label>
+                    <p className="text-sm">{selectedDeposit.user?.username || 'N/A'}</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-between pt-4 border-t">
-                <a
-                  href={getBlockExplorerUrl(selectedDeposit.chain, selectedDeposit.hash)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>View on Block Explorer</span>
-                </a>
+
+              {/* Address Information */}
+              <div>
+                <h3 className="text-md font-semibold text-white mb-3 border-b border-gray-700 pb-2">Address Information</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">From Address</label>
+                    <p className="font-mono text-sm break-all">{selectedDeposit.address}</p>
+                  </div>
+                  {selectedDeposit.memo && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-400">Memo</label>
+                      <p className="font-mono text-sm">{selectedDeposit.memo}</p>
+                    </div>
+                  )}
+                  {selectedDeposit.depositAddress && (
+                    <>
+                      <div>
+                        <label className="text-sm font-medium text-gray-400">Deposit Address (User's Wallet)</label>
+                        <p className="font-mono text-sm break-all">{selectedDeposit.depositAddress.address}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-400">Chain Name</label>
+                          <p className="text-sm">{selectedDeposit.depositAddress.chainName}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-400">Balance</label>
+                          <p className="text-sm font-mono">{selectedDeposit.depositAddress.balance}</p>
+                        </div>
+                        {selectedDeposit.depositAddress.contractAddress && (
+                          <div className="col-span-2">
+                            <label className="text-sm font-medium text-gray-400">Contract Address</label>
+                            <p className="font-mono text-sm break-all">{selectedDeposit.depositAddress.contractAddress}</p>
+                          </div>
+                        )}
+                        <div>
+                          <label className="text-sm font-medium text-gray-400">Address Status</label>
+                          <p className="text-sm">{selectedDeposit.depositAddress.isActive ? 'Active' : 'Inactive'}</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
+
+              {/* Additional Information */}
+              <div>
+                <h3 className="text-md font-semibold text-white mb-3 border-b border-gray-700 pb-2">Additional Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Created At</label>
+                    <p className="text-sm">{formatTimestamp(selectedDeposit.createdAt)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Updated At</label>
+                    <p className="text-sm">{formatTimestamp(selectedDeposit.updatedAt)}</p>
+                  </div>
+                  {selectedDeposit.remark && (
+                    <div className="col-span-2">
+                      <label className="text-sm font-medium text-gray-400">Remark</label>
+                      <p className="text-sm">{selectedDeposit.remark}</p>
+                    </div>
+                  )}
+                  {selectedDeposit.kucoinDepositId && (
+                    <div className="col-span-2">
+                      <label className="text-sm font-medium text-gray-400">KuCoin Deposit ID</label>
+                      <p className="font-mono text-sm">{selectedDeposit.kucoinDepositId}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {selectedDeposit.walletTxId && (
+                <div className="flex justify-between pt-4 border-t border-gray-700">
+                  <a
+                    href={getBlockExplorerUrl(selectedDeposit.chain, selectedDeposit.walletTxId)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>View on Block Explorer</span>
+                  </a>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

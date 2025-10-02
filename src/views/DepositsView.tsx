@@ -3,36 +3,29 @@ import { PageHeader } from '@/components/PageHeader'
 import { DepositHistoryTable } from '@/components/deposit/DepositHistoryTable'
 import { Button } from '@/components/ui/button'
 import { useDepositStore } from '@/store/deposit'
-import { kucoinApi } from '@/services/kucoinApi'
 import { Download } from 'lucide-react'
 
 const DepositsView: React.FC = () => {
-  const { fetchDeposits, loadDummyData, deposits, error, clearError } = useDepositStore()
+  const { fetchDeposits, deposits, error, clearError } = useDepositStore()
 
   useEffect(() => {
-    // Initialize data when component mounts
-    const isConfigured = kucoinApi.isBrokerConfigured()
-    if (isConfigured) {
-      fetchDeposits()
-    } else {
-      loadDummyData()
-    }
-  }, [fetchDeposits, loadDummyData])
-
-  const isConfigured = kucoinApi.isBrokerConfigured()
+    // Fetch deposits from database when component mounts
+    fetchDeposits()
+  }, [fetchDeposits])
 
   const handleExport = () => {
     // Create CSV export of deposits
     if (deposits.length === 0) return
 
-    const csvHeaders = ['Hash', 'Currency', 'Amount', 'Chain', 'Address', 'Status', 'Created At', 'Updated At']
+    const csvHeaders = ['ID', 'User Email', 'Hash', 'Amount', 'Status', 'Confirmations', 'To Address', 'Created At', 'Updated At']
     const csvRows = deposits.map(deposit => [
-      deposit.hash,
-      deposit.currency,
+      deposit.id,
+      deposit.user?.email || 'N/A',
+      deposit.txHash,
       deposit.amount,
-      deposit.chain,
-      deposit.address,
       deposit.status,
+      `${deposit.confirmations}/${deposit.requiredConfirmations}`,
+      deposit.toAddress,
       new Date(deposit.createdAt).toISOString(),
       new Date(deposit.updatedAt).toISOString()
     ])
@@ -55,11 +48,11 @@ const DepositsView: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader 
-        title="Deposits" 
+      <PageHeader
+        title="Deposits"
         description="Monitor deposit activities and transactions"
       >
-        <Button 
+        <Button
           variant="outline"
           onClick={handleExport}
           disabled={deposits.length === 0}
@@ -68,53 +61,29 @@ const DepositsView: React.FC = () => {
           Export CSV
         </Button>
       </PageHeader>
-      
+
       <div className="flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto p-6 space-y-6">
-          {/* Configuration Warning */}
-          {!isConfigured && (
-            <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4">
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-900/20 border border-red-600 rounded-lg p-4">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-yellow-300">
-                    Demo Mode Active
+                  <h3 className="text-sm font-medium text-red-300">
+                    Error Loading Deposits
                   </h3>
-                  <div className="mt-2 text-sm text-yellow-200">
-                    <p>
-                      Broker API credentials are not configured. The deposit monitoring will use demo data. 
-                      Configure your API credentials in the dashboard to enable live deposit tracking.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* API Error Display */}
-          {error && error.includes('demo data') && (
-            <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-300">
-                    Using Demo Data
-                  </h3>
-                  <div className="mt-2 text-sm text-blue-200">
+                  <div className="mt-2 text-sm text-red-200">
                     <p>{error}</p>
                   </div>
                   <div className="mt-2">
                     <button
                       onClick={clearError}
-                      className="text-xs text-blue-300 hover:text-blue-200 underline"
+                      className="text-xs text-red-300 hover:text-red-200 underline"
                     >
                       Dismiss
                     </button>
@@ -132,20 +101,12 @@ const DepositsView: React.FC = () => {
             <h3 className="text-lg font-medium text-white mb-4">Deposit Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-300">
               <div>
-                <h4 className="font-medium text-white mb-2">Supported Networks</h4>
-                <ul className="space-y-1">
-                  <li><strong>Bitcoin:</strong> BTC network</li>
-                  <li><strong>Ethereum:</strong> ERC20 tokens</li>
-                  <li><strong>Tron:</strong> TRC20 tokens</li>
-                  <li><strong>Binance Smart Chain:</strong> BEP20 tokens</li>
-                </ul>
-              </div>
-              <div>
                 <h4 className="font-medium text-white mb-2">Deposit Status</h4>
                 <ul className="space-y-1">
-                  <li><span className="text-green-300">SUCCESS:</span> Deposit confirmed and credited</li>
-                  <li><span className="text-yellow-300">PROCESSING:</span> Awaiting network confirmation</li>
-                  <li><span className="text-red-300">FAILURE:</span> Deposit failed or rejected</li>
+                  <li><span className="text-green-300">COMPLETED:</span> Deposit confirmed and credited</li>
+                  <li><span className="text-blue-300">CONFIRMED:</span> Transaction confirmed</li>
+                  <li><span className="text-yellow-300">PENDING:</span> Awaiting network confirmation</li>
+                  <li><span className="text-red-300">FAILED:</span> Deposit failed or rejected</li>
                 </ul>
               </div>
               <div>
@@ -154,14 +115,25 @@ const DepositsView: React.FC = () => {
                   <li>• Deposit confirmation times vary by network</li>
                   <li>• Always verify the deposit address before sending</li>
                   <li>• Check minimum deposit amounts for each currency</li>
+                  <li>• Confirmations are tracked automatically</li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-medium text-white mb-2">Transaction Details</h4>
                 <ul className="space-y-1">
                   <li>• Click the eye icon to view full deposit details</li>
-                  <li>• External link opens block explorer</li>
+                  <li>• View transaction hash and address information</li>
                   <li>• Use filters to find specific deposits</li>
+                  <li>• Export data for record keeping</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium text-white mb-2">User Information</h4>
+                <ul className="space-y-1">
+                  <li>• Each deposit is linked to a specific user</li>
+                  <li>• View user details in the deposit table</li>
+                  <li>• Filter deposits by user ID</li>
+                  <li>• Track confirmation progress</li>
                 </ul>
               </div>
             </div>

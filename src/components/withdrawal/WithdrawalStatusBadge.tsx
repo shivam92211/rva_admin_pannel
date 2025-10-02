@@ -1,18 +1,24 @@
 import React from 'react'
-import type { TransactionStatus } from '@/types/kucoin'
 
 interface WithdrawalStatusBadgeProps {
-  status: TransactionStatus
+  status: string
 }
 
 export const WithdrawalStatusBadge: React.FC<WithdrawalStatusBadgeProps> = ({ status }) => {
   const getStatusStyles = () => {
-    switch (status) {
+    const upperStatus = status?.toUpperCase()
+    switch (upperStatus) {
       case 'SUCCESS':
+      case 'COMPLETED':
         return 'bg-green-900/20 text-green-300 border-green-600'
       case 'PROCESSING':
+      case 'CONFIRMING':
+      case 'PENDING':
         return 'bg-yellow-900/20 text-yellow-300 border-yellow-600'
       case 'FAILURE':
+      case 'FAILED':
+      case 'REJECTED':
+      case 'CANCELLED':
         return 'bg-red-900/20 text-red-300 border-red-600'
       default:
         return 'bg-gray-900/20 text-gray-300 border-gray-600'
@@ -20,15 +26,27 @@ export const WithdrawalStatusBadge: React.FC<WithdrawalStatusBadgeProps> = ({ st
   }
 
   const getStatusLabel = () => {
-    switch (status) {
+    const upperStatus = status?.toUpperCase()
+    switch (upperStatus) {
       case 'SUCCESS':
         return 'Success'
+      case 'COMPLETED':
+        return 'Completed'
       case 'PROCESSING':
         return 'Processing'
+      case 'CONFIRMING':
+        return 'Confirming'
+      case 'PENDING':
+        return 'Pending'
       case 'FAILURE':
+      case 'FAILED':
         return 'Failed'
+      case 'REJECTED':
+        return 'Rejected'
+      case 'CANCELLED':
+        return 'Cancelled'
       default:
-        return 'Unknown'
+        return status || 'Unknown'
     }
   }
 

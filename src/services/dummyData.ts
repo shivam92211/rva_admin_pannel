@@ -160,11 +160,25 @@ export class DummyDataService {
     return "https://demo-download-link.com/rebate-report.csv"
   }
 
-  static isDemoMode(): boolean {
-    const apiKey = localStorage.getItem('kucoin_api_key')
-    const apiSecret = localStorage.getItem('kucoin_api_secret')
-    const passphrase = localStorage.getItem('kucoin_api_passphrase')
-    
-    return !apiKey || !apiSecret || !passphrase
+  static async isDemoMode(): Promise<boolean> {
+    try {
+      // Check if backend has credentials configured
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/kucoin/broker/credentials`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const credentialStatus = await response.json()
+        return !credentialStatus.isConfigured
+      }
+    } catch (error) {
+      console.warn('Could not check credential status, assuming demo mode')
+    }
+
+    // Default to demo mode if we can't check backend
+    return true
   }
 }

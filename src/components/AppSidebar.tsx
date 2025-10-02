@@ -1,4 +1,3 @@
-import * as React from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   Home,
@@ -7,12 +6,10 @@ import {
   Wallet,
   ArrowUpRight,
   TrendingUp,
-  RefreshCw,
   ChevronUp,
   User2,
   LogOut,
   Menu,
-  X,
   UserCheck,
   FileText,
 } from "lucide-react"
@@ -29,10 +26,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
 
 const navMain = [
     {
@@ -40,16 +35,16 @@ const navMain = [
       url: "/",
       icon: Home,
     },
-    {
-      title: "Sub Accounts", 
-      url: "/subaccounts",
-      icon: Users,
-    },
-    {
-      title: "Transfers",
-      url: "/transfers", 
-      icon: ArrowLeftRight,
-    },
+    // {
+    //   title: "Sub Accounts", 
+    //   url: "/subaccounts",
+    //   icon: Users,
+    // },
+    // {
+    //   title: "Transfers",
+    //   url: "/transfers", 
+    //   icon: ArrowLeftRight,
+    // },
     {
       title: "Deposits",
       url: "/deposits",
@@ -60,11 +55,11 @@ const navMain = [
       url: "/withdrawals",
       icon: ArrowUpRight,
     },
-    {
-      title: "Rebates",
-      url: "/rebates",
-      icon: TrendingUp,
-    },
+    // {
+    //   title: "Rebates",
+    //   url: "/rebates",
+    //   icon: TrendingUp,
+    // },
     {
       title: "Users",
       url: "/users",

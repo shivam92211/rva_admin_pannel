@@ -7,146 +7,161 @@ interface APISettingsModalProps {
   onSaved: () => void
 }
 
-const APISettingsModal: React.FC<APISettingsModalProps> = ({ open, onClose, onSaved }) => {
-  const [formData, setFormData] = useState({
-    apiKey: '',
-    apiSecret: '',
-    apiPassphrase: '',
-    partnerKey: '',
-    brokerName: ''
-  })
+interface CredentialStatus {
+  apiKey: string
+  hasSecret: boolean
+  hasPassphrase: boolean
+  partnerKey: string
+  brokerName: string
+  isConfigured: boolean
+}
 
-  // Load existing credentials when modal opens
+const APISettingsModal: React.FC<APISettingsModalProps> = ({ open, onClose, onSaved }) => {
+  const [credentialStatus, setCredentialStatus] = useState<CredentialStatus | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  // Load credential status when modal opens
   useEffect(() => {
     if (open) {
-      setFormData({
-        apiKey: localStorage.getItem('kucoin_broker_api_key') || '',
-        apiSecret: localStorage.getItem('kucoin_broker_api_secret') || '',
-        apiPassphrase: localStorage.getItem('kucoin_broker_api_passphrase') || '',
-        partnerKey: localStorage.getItem('kucoin_broker_partner_key') || '',
-        brokerName: localStorage.getItem('kucoin_broker_name') || ''
-      })
+      loadCredentialStatus()
     }
   }, [open])
 
+  const loadCredentialStatus = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const status = await kucoinApi.getBrokerCredentials()
+      setCredentialStatus(status)
+    } catch (err: any) {
+      setError(err.message || 'Failed to load credential status')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!open) return null
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleSave = () => {
-    // Store credentials in localStorage for now
-    // In production, these should be handled more securely
-    localStorage.setItem('kucoin_broker_api_key', formData.apiKey)
-    localStorage.setItem('kucoin_broker_api_secret', formData.apiSecret)
-    localStorage.setItem('kucoin_broker_api_passphrase', formData.apiPassphrase)
-    localStorage.setItem('kucoin_broker_partner_key', formData.partnerKey)
-    localStorage.setItem('kucoin_broker_name', formData.brokerName)
-    
-    // Refresh API credentials
-    kucoinApi.refreshCredentials()
-    
-    onSaved()
-  }
+  const StatusIndicator = ({ isSet, label }: { isSet: boolean; label: string }) => (
+    <div className="flex items-center justify-between py-2 px-3 bg-gray-700 rounded">
+      <span className="text-gray-300">{label}</span>
+      <div className={`flex items-center space-x-2 ${isSet ? 'text-green-400' : 'text-red-400'}`}>
+        <div className={`w-2 h-2 rounded-full ${isSet ? 'bg-green-400' : 'bg-red-400'}`}></div>
+        <span className="text-sm">{isSet ? 'Configured' : 'Not Set'}</span>
+      </div>
+    </div>
+  )
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-gray-800 p-6 rounded-lg w-[500px] max-h-[80vh] overflow-y-auto">
-        <h2 className="text-xl font-semibold text-white mb-4">KuCoin Broker API Settings</h2>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Broker API Key *
-            </label>
-            <input
-              type="text"
-              name="apiKey"
-              value={formData.apiKey}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter your broker API key"
-            />
-          </div>
+        <h2 className="text-xl font-semibold text-white mb-4">KuCoin Broker API Status</h2>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              API Secret *
-            </label>
-            <input
-              type="password"
-              name="apiSecret"
-              value={formData.apiSecret}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter your API secret"
-            />
+        {loading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
           </div>
+        )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              API Passphrase *
-            </label>
-            <input
-              type="password"
-              name="apiPassphrase"
-              value={formData.apiPassphrase}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter your API passphrase"
-            />
+        {error && (
+          <div className="mb-4 p-3 bg-red-900/20 border border-red-600 rounded-md">
+            <p className="text-sm text-red-400">{error}</p>
           </div>
+        )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Partner Key
-            </label>
-            <input
-              type="text"
-              name="partnerKey"
-              value={formData.partnerKey}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter your broker partner key (optional)"
-            />
+        {credentialStatus && !loading && (
+          <div className="space-y-4">
+            <div className="mb-6">
+              <div className={`p-4 rounded-lg border ${
+                credentialStatus.isConfigured
+                  ? 'bg-green-900/20 border-green-600'
+                  : 'bg-red-900/20 border-red-600'
+              }`}>
+                <div className="flex items-center space-x-2">
+                  <div className={`w-3 h-3 rounded-full ${
+                    credentialStatus.isConfigured ? 'bg-green-400' : 'bg-red-400'
+                  }`}></div>
+                  <span className={`font-medium ${
+                    credentialStatus.isConfigured ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {credentialStatus.isConfigured ? 'API Configured' : 'API Not Configured'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-300 mt-2">
+                  {credentialStatus.isConfigured
+                    ? 'KuCoin broker API credentials are properly configured in the backend.'
+                    : 'KuCoin broker API credentials need to be configured in the backend environment.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium text-white mb-3">Credential Status</h3>
+
+              <StatusIndicator
+                isSet={!!credentialStatus.apiKey}
+                label="Broker API Key"
+              />
+
+              <StatusIndicator
+                isSet={credentialStatus.hasSecret}
+                label="API Secret"
+              />
+
+              <StatusIndicator
+                isSet={credentialStatus.hasPassphrase}
+                label="API Passphrase"
+              />
+
+              <StatusIndicator
+                isSet={!!credentialStatus.partnerKey}
+                label="Partner Key"
+              />
+
+              <StatusIndicator
+                isSet={!!credentialStatus.brokerName}
+                label="Broker Name"
+              />
+            </div>
+
+            {credentialStatus.apiKey && (
+              <div className="mt-4 p-3 bg-blue-900/20 border border-blue-600 rounded-md">
+                <h4 className="text-blue-400 font-medium mb-2">Configuration Details</h4>
+                <div className="space-y-1 text-sm text-gray-300">
+                  <div>API Key: {credentialStatus.apiKey.substring(0, 8)}...****</div>
+                  {credentialStatus.partnerKey && (
+                    <div>Partner Key: {credentialStatus.partnerKey.substring(0, 8)}...****</div>
+                  )}
+                  {credentialStatus.brokerName && (
+                    <div>Broker Name: {credentialStatus.brokerName}</div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
+        )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Broker Name
-            </label>
-            <input
-              type="text"
-              name="brokerName"
-              value={formData.brokerName}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter your broker name (optional)"
-            />
-          </div>
-        </div>
-
-        <div className="mt-6 p-3 bg-yellow-900/20 border border-yellow-600 rounded-md">
-          <p className="text-sm text-yellow-400">
-            <strong>Note:</strong> These credentials are stored locally for this demo. In production, use environment variables (.env file) for security.
+        <div className="mt-6 p-3 bg-blue-900/20 border border-blue-600 rounded-md">
+          <p className="text-sm text-blue-400">
+            <strong>Security Notice:</strong> KuCoin API credentials are now securely stored in the backend environment.
+            Contact your system administrator to update these credentials.
           </p>
         </div>
 
         <div className="flex justify-end space-x-2 mt-6">
-          <button 
+          <button
+            onClick={loadCredentialStatus}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+          >
+            Refresh Status
+          </button>
+          <button
             onClick={onClose}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
           >
-            Cancel
-          </button>
-          <button 
-            onClick={handleSave}
-            disabled={!formData.apiKey || !formData.apiSecret || !formData.apiPassphrase}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
-          >
-            Save Settings
+            Close
           </button>
         </div>
       </div>
