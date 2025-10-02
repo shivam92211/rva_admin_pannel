@@ -62,7 +62,7 @@ class DepositAPI {
 
   constructor() {
     this.client = axios.create({
-      baseURL: import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3000',
+      baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
       timeout: 30000,
       withCredentials: true,
       headers: {
