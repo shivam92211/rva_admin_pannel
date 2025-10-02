@@ -245,7 +245,7 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
           </div>
 
           {/* Document Images */}
-          <div className="space-y-4">
+          {/* <div className="space-y-4">
             <h3 className="text-lg font-semibold border-b pb-2">Document Images</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <ImagePreview
@@ -280,7 +280,7 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
                 />
               )}
             </div>
-          </div>
+          </div> */}
 
           {/* Review Information */}
           <div className="space-y-4">
