@@ -202,3 +202,54 @@ export interface GetWithdrawDetailRequest {
 export interface GetTransferHistoryRequest {
   orderId: string
 }
+
+export interface CreateTradingPairRequest {
+  symbol: string
+  baseAsset: string
+  quoteAsset: string
+  baseAssetPrecision: number
+  quoteAssetPrecision: number
+  minOrderSize: string
+  minOrderValue: string
+  maxOrderSize?: string
+  maxOrderValue?: string
+  tickSize: string
+  lotSize: string
+  makerFeeRate: string
+  takerFeeRate: string
+  status?: string
+  isMarketOrderEnabled?: boolean
+  isLimitOrderEnabled?: boolean
+  isStopOrderEnabled?: boolean
+  isIcebergOrderEnabled?: boolean
+  isHiddenOrderEnabled?: boolean
+  description?: string
+  tags?: string[]
+}
+
+export interface TradingPair {
+  id: string
+  symbol: string
+  baseAsset: string
+  quoteAsset: string
+  baseAssetPrecision: number
+  quoteAssetPrecision: number
+  minOrderSize: string
+  minOrderValue: string
+  maxOrderSize?: string
+  maxOrderValue?: string
+  tickSize: string
+  lotSize: string
+  makerFeeRate: string
+  takerFeeRate: string
+  status: string
+  isMarketOrderEnabled: boolean
+  isLimitOrderEnabled: boolean
+  isStopOrderEnabled: boolean
+  isIcebergOrderEnabled: boolean
+  isHiddenOrderEnabled: boolean
+  description?: string
+  tags?: string[]
+  createdAt: number
+  updatedAt: number
+}

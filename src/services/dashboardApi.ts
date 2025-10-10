@@ -48,7 +48,7 @@ class DashboardAPI {
 
   async getDashboardStats(): Promise<DashboardStats> {
     try {
-      const response = await this.client.get('/dashboard/stats')
+      const response = await this.client.get('/api/v1/dashboard/stats')
       return response.data
     } catch (error) {
       console.error('Failed to load dashboard stats:', error)
@@ -58,7 +58,7 @@ class DashboardAPI {
 
   async getActivityChartData(): Promise<ChartData[]> {
     try {
-      const response = await this.client.get('/dashboard/activity')
+      const response = await this.client.get('/api/v1/dashboard/activity')
       return response.data
     } catch (error) {
       console.error('Failed to load activity chart data:', error)

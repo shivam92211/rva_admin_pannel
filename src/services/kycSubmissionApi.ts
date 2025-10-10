@@ -82,7 +82,7 @@ class KycSubmissionAPI {
   }
 
   async getKycSubmissions(params?: GetKycSubmissionsParams): Promise<PaginatedKycSubmissionsResponse> {
-    const response = await this.client.get('/kyc-submissions', {
+    const response = await this.client.get('/api/v1/kyc-submissions', {
       params
     })
 
@@ -90,12 +90,12 @@ class KycSubmissionAPI {
   }
 
   async getKycSubmissionById(id: string): Promise<KycSubmission> {
-    const response = await this.client.get<KycSubmission>(`/kyc-submissions/${id}`)
+    const response = await this.client.get<KycSubmission>(`/api/v1/kyc-submissions/${id}`)
     return response.data
   }
 
   async updateKycSubmissionStatus(id: string, updateData: UpdateKycStatusParams): Promise<{ id: string; status: string; message: string }> {
-    const response = await this.client.patch(`/kyc-submissions/${id}/status`, updateData)
+    const response = await this.client.patch(`/api/v1/kyc-submissions/${id}/status`, updateData)
     return response.data
   }
 }

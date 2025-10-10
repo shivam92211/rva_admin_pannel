@@ -72,14 +72,14 @@ class DepositAPI {
   }
 
   async getDeposits(params?: GetDepositsParams): Promise<PaginatedDepositsResponse> {
-    const response = await this.client.get('/deposits', {
+    const response = await this.client.get('/api/v1/deposits', {
       params
     })
     return response.data
   }
 
   async getDepositById(id: string): Promise<Deposit> {
-    const response = await this.client.get<Deposit>(`/deposits/${id}`)
+    const response = await this.client.get<Deposit>(`/api/v1/deposits/${id}`)
     return response.data
   }
 }

@@ -13,6 +13,7 @@ const WithdrawalsView = React.lazy(() => import('../views/WithdrawalsView'))
 const RebatesView = React.lazy(() => import('../views/RebatesView'))
 const UsersView = React.lazy(() => import('../views/UsersView'))
 const KycSubmissionsView = React.lazy(() => import('../views/KycSubmissionsView'))
+const TradingPairsView = React.lazy(() => import('../views/TradingPairsView'))
 
 // Protected layout wrapper component
 const ProtectedLayoutWrapper: React.FC = () => {
@@ -73,6 +74,10 @@ export const router = createBrowserRouter([
       {
         path: '/kyc-submissions',
         element: <KycSubmissionsView />
+      },
+      {
+        path: '/trading-pairs',
+        element: <TradingPairsView />
       }
     ]
   }

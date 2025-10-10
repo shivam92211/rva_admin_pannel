@@ -21,7 +21,9 @@ import type {
   GetDepositDetailRequest,
   GetWithdrawDetailRequest,
   GetTransferHistoryRequest,
-  RebateDownloadRequest
+  RebateDownloadRequest,
+  CreateTradingPairRequest,
+  TradingPair
 } from '@/types/kucoin'
 
 class KuCoinBrokerAPI {
@@ -33,7 +35,7 @@ class KuCoinBrokerAPI {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
     this.client = axios.create({
-      baseURL: `${this.baseURL}/kucoin`,
+      baseURL: `${this.baseURL}/api/v1/kucoin`,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json'
@@ -150,6 +152,11 @@ class KuCoinBrokerAPI {
 
   async downloadBrokerRebate(params: RebateDownloadRequest): Promise<string> {
     const response = await this.client.get('/rebate/download', { params })
+    return response
+  }
+
+  async createTradingPair(data: CreateTradingPairRequest): Promise<TradingPair> {
+    const response = await this.client.post('/trading-pairs', data)
     return response
   }
 

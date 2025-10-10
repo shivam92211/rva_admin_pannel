@@ -106,26 +106,26 @@ class WithdrawalAPI {
   }
 
   async getWithdrawals(params?: GetWithdrawalsParams): Promise<PaginatedWithdrawalsResponse> {
-    const response = await this.client.get('/withdrawals', {
+    const response = await this.client.get('/api/v1/withdrawals', {
       params
     })
     return response.data
   }
 
   async getWithdrawalById(id: string): Promise<Withdrawal> {
-    const response = await this.client.get<Withdrawal>(`/withdrawals/${id}`)
+    const response = await this.client.get<Withdrawal>(`/api/v1/withdrawals/${id}`)
     return response.data
   }
 
   async getKucoinWithdrawalHistory(params?: GetWithdrawalsParams): Promise<PaginatedKucoinWithdrawalHistoryResponse> {
-    const response = await this.client.get('/withdrawals/history', {
+    const response = await this.client.get('/api/v1/withdrawals/history', {
       params
     })
     return response.data
   }
 
   async getKucoinWithdrawalHistoryById(id: string): Promise<KucoinWithdrawalHistory> {
-    const response = await this.client.get<KucoinWithdrawalHistory>(`/withdrawals/history/${id}`)
+    const response = await this.client.get<KucoinWithdrawalHistory>(`/api/v1/withdrawals/history/${id}`)
     return response.data
   }
 }

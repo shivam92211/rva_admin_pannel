@@ -12,6 +12,7 @@ import {
   Menu,
   UserCheck,
   FileText,
+  ArrowRightLeft,
 } from "lucide-react"
 import { useAuthStore } from "../store/authStore"
 
@@ -69,6 +70,11 @@ const navMain = [
       title: "KYC Submissions",
       url: "/kyc-submissions",
       icon: FileText,
+    },
+    {
+      title: "Trading Pairs",
+      url: "/trading-pairs",
+      icon: ArrowRightLeft,
     },
   ]
 

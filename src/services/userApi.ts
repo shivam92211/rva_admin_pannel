@@ -91,7 +91,7 @@ class UserAPI {
   }
 
   async getUsers(params?: GetUsersParams): Promise<PaginatedUsersResponse> {
-    const response = await this.client.get('/users', {
+    const response = await this.client.get('/api/v1/users', {
       params
     })
 
@@ -115,22 +115,22 @@ class UserAPI {
   }
 
   async getUserById(id: string): Promise<User> {
-    const response = await this.client.get<User>(`/users/${id}`)
+    const response = await this.client.get<User>(`/api/v1/users/${id}`)
     return response.data
   }
 
   async toggleUserStatus(id: string): Promise<{ id: string; isActive: boolean; message: string }> {
-    const response = await this.client.patch(`/users/${id}/toggle-status`)
+    const response = await this.client.patch(`/api/v1/users/${id}/toggle-status`)
     return response.data
   }
 
   async toggleWithdrawalWhitelist(id: string): Promise<{ id: string; withdrawalWhitelist: boolean; message: string }> {
-    const response = await this.client.patch(`/users/${id}/toggle-whitelist`)
+    const response = await this.client.patch(`/api/v1/users/${id}/toggle-whitelist`)
     return response.data
   }
 
   async getUserDevices(id: string): Promise<UserDevicesResponse> {
-    const response = await this.client.get<UserDevicesResponse>(`/users/${id}/devices`)
+    const response = await this.client.get<UserDevicesResponse>(`/api/v1/users/${id}/devices`)
     return response.data
   }
 }

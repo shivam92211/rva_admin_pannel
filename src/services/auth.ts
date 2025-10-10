@@ -63,7 +63,7 @@ export class AuthService {
       }
 
       const response = await axios.post<LoginResponse | TwoFactorRequiredResponse>(
-        `${API_BASE_URL}/auth/portal-auth-gate-7a3b9f`,
+        `${API_BASE_URL}/api/v1/auth/portal-auth-gate-7a3b9f`,
         payload,
         {
           withCredentials: true,
@@ -102,7 +102,7 @@ export class AuthService {
   async verify2FALogin(adminId: string, code: string): Promise<LoginResponse> {
     try {
       const response = await axios.post<LoginResponse>(
-        `${API_BASE_URL}/auth/login-2fa`,
+        `${API_BASE_URL}/api/v1/auth/login-2fa`,
         { adminId, code },
         {
           withCredentials: true,
@@ -136,7 +136,7 @@ export class AuthService {
   async logout(): Promise<void> {
     try {
       if (this.token) {
-        await axios.post(`${API_BASE_URL}/auth/logout`, {}, {
+        await axios.post(`${API_BASE_URL}/api/v1/auth/logout`, {}, {
           withCredentials: true,
           headers: {
             Authorization: `Bearer ${this.token}`,
@@ -166,7 +166,7 @@ export class AuthService {
     }
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/auth/verify`, {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/auth/verify`, {
         withCredentials: true,
         headers: {
           Authorization: `Bearer ${this.token}`,
@@ -233,7 +233,7 @@ export class AuthService {
     this.refreshPromise = (async () => {
       try {
         const response = await axios.post<{ access_token: string }>(
-          `${API_BASE_URL}/auth/refresh`,
+          `${API_BASE_URL}/api/v1/auth/refresh`,
           { refresh_token: this.refreshToken },
           {
             withCredentials: true,
