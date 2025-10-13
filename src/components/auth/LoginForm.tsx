@@ -25,7 +25,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   useEffect(() => {
     const checkCaptchaRequired = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/auth/captcha-required`);
+        const response = await axios.get(`${API_BASE_URL}/api/v1/auth/captcha-required`);
         setCaptchaRequired(response.data.required);
       } catch (error) {
         console.error('Failed to check CAPTCHA requirement:', error);
@@ -66,7 +66,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       }
       // Check if we now need CAPTCHA after failed attempt
       try {
-        const response = await axios.get(`${API_BASE_URL}/auth/captcha-required`);
+        const response = await axios.get(`${API_BASE_URL}/api/v1/auth/captcha-required`);
         setCaptchaRequired(response.data.required);
       } catch (checkError) {
         console.error('Failed to check CAPTCHA requirement:', checkError);
