@@ -1,77 +1,78 @@
-import React, { useEffect, useState } from 'react'
-import { PageHeader } from '@/components/PageHeader'
-import { WithdrawalHistoryTable } from '@/components/withdrawal/WithdrawalHistoryTable'
-import { KucoinWithdrawalHistoryTable } from '@/components/withdrawal/KucoinWithdrawalHistoryTable'
-import { Button } from '@/components/ui/button'
-import { useWithdrawalStore } from '@/store/withdrawal'
-import { Download } from 'lucide-react'
+import React, { useEffect, useState } from 'react';
+import { PageHeader } from '@/components/PageHeader';
+import { WithdrawalHistoryTable } from '@/components/withdrawal/WithdrawalHistoryTable';
+import { KucoinWithdrawalHistoryTable } from '@/components/withdrawal/KucoinWithdrawalHistoryTable';
+import { Button } from '@/components/ui/button';
+import { useWithdrawalStore } from '@/store/withdrawal';
+import { Download } from 'lucide-react';
 
-type TabType = 'requests' | 'kucoin'
+type TabType = 'requests' | 'kucoin';
 
 const WithdrawalsView: React.FC = () => {
-  const { fetchWithdrawals, fetchKucoinWithdrawals, withdrawals, kucoinWithdrawals, error, clearError } = useWithdrawalStore()
-  const [activeTab, setActiveTab] = useState<TabType>('requests')
+  const { fetchWithdrawals, fetchKucoinWithdrawals,
+    withdrawals, kucoinWithdrawals, error, clearError } = useWithdrawalStore();
+  const [activeTab, setActiveTab] = useState<TabType>('requests');
 
   useEffect(() => {
     // Fetch withdrawals from database when component mounts
     if (activeTab === 'requests') {
-      fetchWithdrawals()
+      fetchWithdrawals();
     } else {
-      fetchKucoinWithdrawals()
+      fetchKucoinWithdrawals();
     }
-  }, [activeTab, fetchWithdrawals, fetchKucoinWithdrawals])
+  }, [activeTab, fetchWithdrawals, fetchKucoinWithdrawals]);
 
   const handleExport = () => {
     // Create CSV export of withdrawals
-    const data = activeTab === 'requests' ? withdrawals : kucoinWithdrawals
-    if (data.length === 0) return
+    const data = activeTab === 'requests' ? withdrawals : kucoinWithdrawals;
+    if (data.length === 0) return;
 
     const csvHeaders = activeTab === 'requests'
       ? ['ID', 'User Email', 'Amount', 'Fee', 'Total', 'To Address', 'Status', 'TX Hash', 'Created At', 'Updated At']
-      : ['ID', 'User Email', 'Amount', 'Fee', 'Currency', 'Chain', 'Address', 'Status', 'TX Hash', 'Created At', 'Updated At']
+      : ['ID', 'User Email', 'Amount', 'Fee', 'Currency', 'Chain', 'Address', 'Status', 'TX Hash', 'Created At', 'Updated At'];
 
     const csvRows = activeTab === 'requests'
       ? withdrawals.map(withdrawal => [
-          withdrawal.id,
-          withdrawal.user?.email || 'N/A',
-          withdrawal.amount,
-          withdrawal.fee,
-          withdrawal.totalAmount,
-          withdrawal.toAddress,
-          withdrawal.status,
-          withdrawal.txHash || 'N/A',
-          new Date(withdrawal.createdAt).toISOString(),
-          new Date(withdrawal.updatedAt).toISOString()
-        ])
+        withdrawal.id,
+        withdrawal.user?.email || 'N/A',
+        withdrawal.amount,
+        withdrawal.fee,
+        withdrawal.totalAmount,
+        withdrawal.toAddress,
+        withdrawal.status,
+        withdrawal.txHash || 'N/A',
+        new Date(withdrawal.createdAt).toISOString(),
+        new Date(withdrawal.updatedAt).toISOString()
+      ])
       : kucoinWithdrawals.map(withdrawal => [
-          withdrawal.id,
-          withdrawal.user?.email || 'N/A',
-          withdrawal.amount,
-          withdrawal.fee,
-          withdrawal.currency,
-          withdrawal.chain,
-          withdrawal.address,
-          withdrawal.status,
-          withdrawal.walletTxId || 'N/A',
-          new Date(withdrawal.createdAt).toISOString(),
-          new Date(withdrawal.updatedAt).toISOString()
-        ])
+        withdrawal.id,
+        withdrawal.user?.email || 'N/A',
+        withdrawal.amount,
+        withdrawal.fee,
+        withdrawal.currency,
+        withdrawal.chain,
+        withdrawal.address,
+        withdrawal.status,
+        withdrawal.walletTxId || 'N/A',
+        new Date(withdrawal.createdAt).toISOString(),
+        new Date(withdrawal.updatedAt).toISOString()
+      ]);
 
     const csvContent = [
       csvHeaders.join(','),
       ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n')
+    ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${activeTab}_withdrawals_${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-  }
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${activeTab}_withdrawals_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -82,7 +83,9 @@ const WithdrawalsView: React.FC = () => {
         <Button
           variant="outline"
           onClick={handleExport}
-          disabled={(activeTab === 'requests' ? withdrawals.length : kucoinWithdrawals.length) === 0}
+          disabled={(activeTab === 'requests'
+            ? withdrawals.length
+            : kucoinWithdrawals.length) === 0}
         >
           <Download className="h-4 w-4 mr-2" />
           Export CSV
@@ -95,21 +98,19 @@ const WithdrawalsView: React.FC = () => {
           <div className="bg-gray-800 rounded-lg p-1 inline-flex space-x-1">
             <button
               onClick={() => setActiveTab('requests')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'requests'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'requests'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
             >
               Withdrawal Requests
             </button>
             <button
               onClick={() => setActiveTab('kucoin')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'kucoin'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'kucoin'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
             >
               Withdrawals
             </button>
@@ -193,7 +194,7 @@ const WithdrawalsView: React.FC = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default WithdrawalsView
+export default WithdrawalsView;

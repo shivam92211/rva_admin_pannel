@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search, RefreshCw, Eye, ExternalLink } from 'lucide-react';
+import { Search, RefreshCw, Eye, ExternalLink, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import RefreshButton from '../common/RefreshButton';
+import { useSnackbarMsg } from '@/hooks/snackbar';
 
 export const DepositHistoryTable: React.FC = () => {
   const {
@@ -21,6 +22,19 @@ export const DepositHistoryTable: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [, setMsg] = useSnackbarMsg();
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      // You could add a toast notification here if you have one
+      setMsg({
+        msg: 'Address copied to clipboard',
+        type: 'success'
+      });
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
 
   // Filter deposits based on search and filters
   const filteredDeposits = deposits.filter(deposit => {
@@ -150,6 +164,7 @@ export const DepositHistoryTable: React.FC = () => {
             <thead>
               <tr className="border-b border-gray-700">
                 <th className="text-left py-3 px-4 text-gray-300 font-medium">Wallet TX ID</th>
+                <th className="text-left py-3 px-4 text-gray-300 font-medium">Address</th>
                 <th className="text-left py-3 px-4 text-gray-300 font-medium">User</th>
                 <th className="text-left py-3 px-4 text-gray-300 font-medium">Currency</th>
                 <th className="text-left py-3 px-4 text-gray-300 font-medium">Amount</th>
@@ -167,7 +182,7 @@ export const DepositHistoryTable: React.FC = () => {
                       <code className="text-sm text-blue-300 bg-gray-700/50 px-2 py-1 rounded">
                         {truncateHash(deposit.walletTxId || deposit.id)}
                       </code>
-                      {deposit.walletTxId && (
+                      {/* {deposit.walletTxId && (
                         <a
                           href={getBlockExplorerUrl(deposit.chain, deposit.walletTxId)}
                           target="_blank"
@@ -176,9 +191,28 @@ export const DepositHistoryTable: React.FC = () => {
                         >
                           <ExternalLink className="w-3 h-3" />
                         </a>
+                      )} */}
+                    </div>
+                  </td>
+
+                  {/* Address */}
+                  <td className="py-3 px-4">
+                    <div className="flex items-center space-x-2">
+                      <code className="text-sm text-gray-300 bg-gray-700/50 px-2 py-1 rounded">
+                        {truncateAddress(deposit.address)}
+                      </code>
+                      {deposit.address && (
+                        <button
+                          onClick={() => copyToClipboard(deposit.address)}
+                          className="text-gray-400 hover:text-blue-400 transition-colors p-1"
+                          title="Copy address to clipboard"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
                       )}
                     </div>
                   </td>
+
                   <td className="py-3 px-4">
                     <div className="text-sm">
                       <div className="text-white font-medium">
@@ -191,11 +225,13 @@ export const DepositHistoryTable: React.FC = () => {
                       )}
                     </div>
                   </td>
+
                   <td className="py-3 px-4">
                     <span className="text-sm font-medium text-white">
                       {deposit.currency}
                     </span>
                   </td>
+
                   <td className="py-3 px-4">
                     <span className="text-sm font-mono text-green-300">
                       {deposit.amount && !isNaN(parseFloat(deposit.amount))
@@ -203,14 +239,17 @@ export const DepositHistoryTable: React.FC = () => {
                         : 'N/A'}
                     </span>
                   </td>
+
                   <td className="py-3 px-4">
                     <span className="text-sm text-gray-300 bg-gray-700/30 px-2 py-1 rounded">
                       {deposit.chain}
                     </span>
                   </td>
+
                   <td className="py-3 px-4">
                     <DepositStatusBadge status={deposit.status} />
                   </td>
+
                   <td className="py-3 px-4">
                     <span className="text-xs text-gray-400">
                       {formatTimestamp(deposit.createdAt)}

@@ -1,50 +1,73 @@
-import React, { useEffect } from 'react'
-import { PageHeader } from '@/components/PageHeader'
-import { DepositHistoryTable } from '@/components/deposit/DepositHistoryTable'
-import { Button } from '@/components/ui/button'
-import { useDepositStore } from '@/store/deposit'
-import { Download } from 'lucide-react'
+import React, { useEffect } from 'react';
+import { PageHeader } from '@/components/PageHeader';
+import { DepositHistoryTable } from '@/components/deposit/DepositHistoryTable';
+import { Button } from '@/components/ui/button';
+import { useDepositStore } from '@/store/deposit';
+import { Download } from 'lucide-react';
 
 const DepositsView: React.FC = () => {
-  const { fetchDeposits, deposits, error, clearError } = useDepositStore()
+  const { fetchDeposits, deposits, error, clearError } = useDepositStore();
 
   useEffect(() => {
     // Fetch deposits from database when component mounts
-    fetchDeposits()
-  }, [fetchDeposits])
+    fetchDeposits();
+  }, [fetchDeposits]);
+
+  const formatExportTimestamp = (timestamp: string | number) => {
+    if (!timestamp) return 'N/A';
+    try {
+      // Handle both string and number timestamps
+      const numTimestamp = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
+
+      // Check if it's a valid number
+      if (isNaN(numTimestamp)) return 'N/A';
+
+      const date = new Date(numTimestamp);
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) return 'N/A';
+
+      return date.toISOString();
+    } catch (error) {
+      console.error('Error formatting timestamp for export:', timestamp, error);
+      return 'N/A';
+    }
+  };
 
   const handleExport = () => {
     // Create CSV export of deposits
-    if (deposits.length === 0) return
+    if (deposits.length === 0) return;
 
-    const csvHeaders = ['ID', 'User Email', 'Hash', 'Amount', 'Status', 'Confirmations', 'To Address', 'Created At', 'Updated At']
+    const csvHeaders = ['Wallet TX ID', 'Address', 'User Email', 'Username', 'Currency', 'Amount', 'Chain', 'Status', 'Created At'];
     const csvRows = deposits.map(deposit => [
-      deposit.id,
+      deposit.walletTxId || deposit.id || 'N/A',
+      deposit.address || 'N/A',
       deposit.user?.email || 'N/A',
-      deposit.txHash,
-      deposit.amount,
-      deposit.status,
-      `${deposit.confirmations}/${deposit.requiredConfirmations}`,
-      deposit.toAddress,
-      new Date(deposit.createdAt).toISOString(),
-      new Date(deposit.updatedAt).toISOString()
-    ])
+      deposit.user?.username || 'N/A',
+      deposit.currency || 'N/A',
+      deposit.amount && !isNaN(parseFloat(deposit.amount))
+        ? parseFloat(deposit.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })
+        : 'N/A',
+      deposit.chain || 'N/A',
+      deposit.status || 'N/A',
+      formatExportTimestamp(deposit.createdAt)
+    ]);
 
     const csvContent = [
       csvHeaders.join(','),
-      ...csvRows.map(row => row.join(','))
-    ].join('\n')
+      ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `deposits_${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-  }
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `deposits_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -141,7 +164,7 @@ const DepositsView: React.FC = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default DepositsView
+export default DepositsView;

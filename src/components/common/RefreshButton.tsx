@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { RefreshCw } from 'lucide-react';
+import { useSnackbarMsg } from '@/hooks/snackbar';
 
 export default function RefreshButton({
   onClick,
@@ -8,14 +9,21 @@ export default function RefreshButton({
   onClick: () => void;
 }) {
   const [refreshing, setRefreshing] = useState(false);
-  const buttonText = refreshing ? 'Refreshing...' : 'Refresh';
+  const [, setMsg] = useSnackbarMsg();
+  // const buttonText = refreshing ? 'Refreshing...' : 'Refresh';
   return (
     <>
       <Button
         onClick={() => {
           setRefreshing(true);
           onClick();
-          setTimeout(() => setRefreshing(false), 1000);
+          setTimeout(() => {
+            setRefreshing(false);
+            setMsg({
+              msg: 'Refreshed successfully',
+              type: 'success'
+            });
+          }, 1000);
         }}
         variant="outline"
         size="sm"
