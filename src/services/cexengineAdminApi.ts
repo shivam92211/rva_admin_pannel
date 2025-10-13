@@ -238,32 +238,39 @@ export class CexEngineAdminClient {
     data: CreateTradingPairDto,
     image?: File
   ): Promise<TradingPairResponseDto> {
-    const formData = new FormData();
-
-    // Add all fields to form data
-    Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          formData.append(key, JSON.stringify(value));
-        } else {
-          formData.append(key, String(value));
-        }
-      }
-    });
-
-    // Add image if provided
     if (image) {
-      formData.append('image', image);
-    }
+      // Use FormData endpoint when image is provided
+      const formData = new FormData();
 
-    return this.request<TradingPairResponseDto>('/trading-pairs', {
-      method: 'POST',
-      body: formData,
-      headers: {
-        // Remove Content-Type to let browser set it with boundary for FormData
-        Authorization: this.authToken ? `Bearer ${this.authToken}` : '',
-      },
-    });
+      // Add all fields to form data
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
+
+      // Add image
+      formData.append('image', image);
+
+      return this.request<TradingPairResponseDto>('/trading-pairs-img', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          // Remove Content-Type to let browser set it with boundary for FormData
+          Authorization: this.authToken ? `Bearer ${this.authToken}` : '',
+        },
+      });
+    } else {
+      // Use JSON endpoint when no image is provided
+      return this.request<TradingPairResponseDto>('/trading-pairs', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    }
   }
 
   /**
@@ -274,32 +281,39 @@ export class CexEngineAdminClient {
     data: UpdateTradingPairDto,
     image?: File
   ): Promise<TradingPairResponseDto> {
-    const formData = new FormData();
-
-    // Add all fields to form data
-    Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          formData.append(key, JSON.stringify(value));
-        } else {
-          formData.append(key, String(value));
-        }
-      }
-    });
-
-    // Add image if provided
     if (image) {
-      formData.append('image', image);
-    }
+      // Use FormData endpoint when image is provided (assuming you have /trading-pairs-img/:symbol)
+      const formData = new FormData();
 
-    return this.request<TradingPairResponseDto>(`/trading-pairs/${symbol}`, {
-      method: 'PUT',
-      body: formData,
-      headers: {
-        // Remove Content-Type to let browser set it with boundary for FormData
-        Authorization: this.authToken ? `Bearer ${this.authToken}` : '',
-      },
-    });
+      // Add all fields to form data
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
+
+      // Add image
+      formData.append('image', image);
+
+      return this.request<TradingPairResponseDto>(`/trading-pairs-img/${symbol}`, {
+        method: 'PUT',
+        body: formData,
+        headers: {
+          // Remove Content-Type to let browser set it with boundary for FormData
+          Authorization: this.authToken ? `Bearer ${this.authToken}` : '',
+        },
+      });
+    } else {
+      // Use JSON endpoint when no image is provided
+      return this.request<TradingPairResponseDto>(`/trading-pairs/${symbol}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    }
   }
 
   /**
