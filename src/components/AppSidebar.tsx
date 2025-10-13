@@ -104,7 +104,7 @@ export function AppSidebar() {
                 {open && (
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">RVA Admin Panel</span>
-                    <span className="truncate text-xs text-yellow-800">
+                    <span className="truncate text-xs text-yellow-600">
                       {admin?.role || 'Admin'}
                     </span>
                   </div>

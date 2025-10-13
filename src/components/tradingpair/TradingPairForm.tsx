@@ -2,19 +2,19 @@ import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { kucoinApi } from '@/services/kucoinApi'
-import type { CreateTradingPairRequest } from '@/types/kucoin'
+import { cexAdminClient, CreateTradingPairDto, TradingPairsStatus } from '@/services/cexengineAdminApi'
 
 interface TradingPairFormProps {
   onSuccess?: () => void
+  onCancel?: () => void
 }
 
-export const TradingPairForm: React.FC<TradingPairFormProps> = ({ onSuccess }) => {
+export const TradingPairForm: React.FC<TradingPairFormProps> = ({ onSuccess, onCancel }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  const [formData, setFormData] = useState<CreateTradingPairRequest>({
+  const [formData, setFormData] = useState<CreateTradingPairDto>({
     symbol: '',
     baseAsset: '',
     quoteAsset: '',
@@ -28,7 +28,7 @@ export const TradingPairForm: React.FC<TradingPairFormProps> = ({ onSuccess }) =
     lotSize: '',
     makerFeeRate: '0.1',
     takerFeeRate: '0.1',
-    status: 'ACTIVE',
+    status: TradingPairsStatus.ACTIVE,
     isMarketOrderEnabled: true,
     isLimitOrderEnabled: true,
     isStopOrderEnabled: false,
@@ -38,7 +38,7 @@ export const TradingPairForm: React.FC<TradingPairFormProps> = ({ onSuccess }) =
     tags: []
   })
 
-  const handleInputChange = (field: keyof CreateTradingPairRequest, value: any) => {
+  const handleInputChange = (field: keyof CreateTradingPairDto, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     setError(null)
   }
@@ -66,7 +66,7 @@ export const TradingPairForm: React.FC<TradingPairFormProps> = ({ onSuccess }) =
       if (!submitData.description) delete submitData.description
       if (!submitData.tags || submitData.tags.length === 0) delete submitData.tags
 
-      await kucoinApi.createTradingPair(submitData)
+      await cexAdminClient.createTradingPair(submitData)
 
       setSuccess(true)
       setTimeout(() => {
@@ -370,8 +370,13 @@ export const TradingPairForm: React.FC<TradingPairFormProps> = ({ onSuccess }) =
         </div>
       </div>
 
-      {/* Submit Button */}
-      <div className="flex justify-end pt-4">
+      {/* Submit Buttons */}
+      <div className="flex justify-end gap-2 pt-4">
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
         <Button type="submit" disabled={loading}>
           {loading ? 'Creating...' : 'Create Trading Pair'}
         </Button>
