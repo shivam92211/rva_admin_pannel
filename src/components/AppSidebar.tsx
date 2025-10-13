@@ -97,14 +97,14 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <div className="flex items-center justify-between px-1 py-1.5">
               <div className="flex items-center gap-2 text-left text-sm">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   {/* <Menu className="h-4 w-4" /> */}
                   <img src="./logo.jpeg" alt="RVA Logo" className=" rounded-full " />
                 </div>
                 {open && (
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">RVA Admin Panel</span>
-                    <span className="truncate text-xs text-blue-600">
+                    <span className="truncate text-xs text-yellow-800">
                       {admin?.role || 'Admin'}
                     </span>
                   </div>

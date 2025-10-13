@@ -7,8 +7,8 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
-    "dev": "bunx vite",
-    "start": "bunx vite preview --port ${PORT:-4173}",
+    "dev": "bunx vite --port ${VITE_PORT:-2000}",
+    "start": "bunx vite preview --port ${VITE_PORT:-2000}",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "bunx vite preview",
     "build-only": "bunx vite build",
