@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Search, RefreshCw, Eye, ExternalLink } from 'lucide-react'
 import { format } from 'date-fns'
+import RefreshButton from '../common/RefreshButton';
 
 export const WithdrawalHistoryTable: React.FC = () => {
   const {
@@ -75,15 +76,7 @@ export const WithdrawalHistoryTable: React.FC = () => {
     <div className="bg-gray-800 rounded-lg p-6 flex flex-col min-h-0">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-white">Withdrawal History</h2>
-        <Button
-          onClick={handleRefresh}
-          variant="outline"
-          size="sm"
-          className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
+        <RefreshButton onClick={handleRefresh} />
       </div>
 
       {/* Filters */}

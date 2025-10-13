@@ -20,6 +20,7 @@ import {
 import { Search, RefreshCw, ChevronLeft, ChevronRight, Power, PowerOff, Shield, ShieldCheck } from 'lucide-react'
 import { userApi, type User, type PaginatedUsersResponse } from '@/services/userApi'
 import { UserDetailsDialog } from '@/components/UserDetailsDialog'
+import RefreshButton from '@/components/common/RefreshButton';
 
 const UsersView: React.FC = () => {
   const [users, setUsers] = useState<User[]>([])
@@ -183,10 +184,7 @@ const UsersView: React.FC = () => {
         description="Manage system users and their information"
       >
         <div className="flex gap-2">
-          <Button variant="outline" onClick={loadUsers} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <RefreshButton onClick={loadUsers} />
         </div>
       </PageHeader>
 

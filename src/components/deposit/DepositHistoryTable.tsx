@@ -1,12 +1,13 @@
-import React, { useState } from 'react'
-import { useDepositStore } from '@/store/deposit'
-import { DepositStatusBadge } from './DepositStatusBadge'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Search, RefreshCw, Eye, ExternalLink } from 'lucide-react'
-import { format } from 'date-fns'
+import React, { useState } from 'react';
+import { useDepositStore } from '@/store/deposit';
+import { DepositStatusBadge } from './DepositStatusBadge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Search, RefreshCw, Eye, ExternalLink } from 'lucide-react';
+import { format } from 'date-fns';
+import RefreshButton from '../common/RefreshButton';
 
 export const DepositHistoryTable: React.FC = () => {
   const {
@@ -16,10 +17,10 @@ export const DepositHistoryTable: React.FC = () => {
     fetchDeposits,
     fetchDepositDetail,
     clearSelectedDeposit
-  } = useDepositStore()
+  } = useDepositStore();
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Filter deposits based on search and filters
   const filteredDeposits = deposits.filter(deposit => {
@@ -28,64 +29,64 @@ export const DepositHistoryTable: React.FC = () => {
       deposit.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
       deposit.currency.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (deposit.user?.email && deposit.user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (deposit.user?.username && deposit.user.username.toLowerCase().includes(searchTerm.toLowerCase()))
+      (deposit.user?.username && deposit.user.username.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesStatus = statusFilter === 'all' || deposit.status === statusFilter
+    const matchesStatus = statusFilter === 'all' || deposit.status === statusFilter;
 
-    return matchesSearch && matchesStatus
-  })
+    return matchesSearch && matchesStatus;
+  });
 
   const handleRefresh = () => {
-    fetchDeposits()
-  }
+    fetchDeposits();
+  };
 
   const handleViewDetails = (id: string) => {
-    fetchDepositDetail(id)
-  }
+    fetchDepositDetail(id);
+  };
 
   const truncateHash = (hash: string) => {
-    if (!hash) return 'N/A'
-    return `${hash.slice(0, 6)}...${hash.slice(-6)}`
-  }
+    if (!hash) return 'N/A';
+    return `${hash.slice(0, 6)}...${hash.slice(-6)}`;
+  };
 
   const truncateAddress = (address: string) => {
-    if (!address) return 'N/A'
-    if (address.length <= 20) return address
-    return `${address.slice(0, 8)}...${address.slice(-8)}`
-  }
+    if (!address) return 'N/A';
+    if (address.length <= 20) return address;
+    return `${address.slice(0, 8)}...${address.slice(-8)}`;
+  };
 
   const getBlockExplorerUrl = (chain: string, txId: string) => {
-    if (!txId) return '#'
+    if (!txId) return '#';
     const explorers: Record<string, string> = {
       'BTC': `https://blockstream.info/tx/${txId}`,
       'ETH': `https://etherscan.io/tx/${txId}`,
       'ERC20': `https://etherscan.io/tx/${txId}`,
       'TRC20': `https://tronscan.org/#/transaction/${txId}`,
       'BEP20': `https://bscscan.com/tx/${txId}`,
-    }
-    return explorers[chain] || `https://etherscan.io/tx/${txId}`
-  }
+    };
+    return explorers[chain] || `https://etherscan.io/tx/${txId}`;
+  };
 
   const formatTimestamp = (timestamp: string | number) => {
-    if (!timestamp) return 'N/A'
+    if (!timestamp) return 'N/A';
     try {
       // Handle both string and number timestamps
-      const numTimestamp = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp
+      const numTimestamp = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
 
       // Check if it's a valid number
-      if (isNaN(numTimestamp)) return 'N/A'
+      if (isNaN(numTimestamp)) return 'N/A';
 
-      const date = new Date(numTimestamp)
+      const date = new Date(numTimestamp);
 
       // Check if date is valid
-      if (isNaN(date.getTime())) return 'N/A'
+      if (isNaN(date.getTime())) return 'N/A';
 
-      return format(date, 'MMM dd, yyyy HH:mm')
+      return format(date, 'MMM dd, yyyy HH:mm');
     } catch (error) {
-      console.error('Error formatting timestamp:', timestamp, error)
-      return 'N/A'
+      console.error('Error formatting timestamp:', timestamp, error);
+      return 'N/A';
     }
-  }
+  };
 
   if (isLoading && deposits.length === 0) {
     return (
@@ -95,22 +96,14 @@ export const DepositHistoryTable: React.FC = () => {
           <span className="ml-2 text-gray-400">Loading deposit history...</span>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 flex flex-col min-h-0">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-white">Deposit History</h2>
-        <Button
-          onClick={handleRefresh}
-          variant="outline"
-          size="sm"
-          className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
+        <RefreshButton onClick={handleRefresh} />
       </div>
 
       {/* Filters */}
@@ -402,5 +395,5 @@ export const DepositHistoryTable: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};

@@ -20,6 +20,7 @@ import {
 import { Search, RefreshCw, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
 import { kycSubmissionApi, type KycSubmission, type PaginatedKycSubmissionsResponse } from '@/services/kycSubmissionApi'
 import { KycDetailsDialog } from '@/components/KycDetailsDialog'
+import RefreshButton from '@/components/common/RefreshButton';
 
 const KycSubmissionsView: React.FC = () => {
   const [kycSubmissions, setKycSubmissions] = useState<KycSubmission[]>([])
@@ -206,10 +207,7 @@ const KycSubmissionsView: React.FC = () => {
         description="Manage and review KYC submission requests"
       >
         <div className="flex gap-2">
-          <Button variant="outline" onClick={loadKycSubmissions} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <RefreshButton onClick={loadKycSubmissions} />
         </div>
       </PageHeader>
 

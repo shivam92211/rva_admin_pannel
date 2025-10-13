@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   Users,
@@ -13,8 +13,8 @@ import {
   UserCheck,
   FileText,
   ArrowRightLeft,
-} from "lucide-react"
-import { useAuthStore } from "../store/authStore"
+} from "lucide-react";
+import { useAuthStore } from "../store/authStore";
 
 import {
   Sidebar,
@@ -28,67 +28,68 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+import { cipherEmail } from "@/utils/security";
 
 const navMain = [
-    {
-      title: "Dashboard",
-      url: "/",
-      icon: Home,
-    },
-    // {
-    //   title: "Sub Accounts", 
-    //   url: "/subaccounts",
-    //   icon: Users,
-    // },
-    // {
-    //   title: "Transfers",
-    //   url: "/transfers", 
-    //   icon: ArrowLeftRight,
-    // },
-    {
-      title: "Deposits",
-      url: "/deposits",
-      icon: Wallet,
-    },
-    {
-      title: "Withdrawals",
-      url: "/withdrawals",
-      icon: ArrowUpRight,
-    },
-    // {
-    //   title: "Rebates",
-    //   url: "/rebates",
-    //   icon: TrendingUp,
-    // },
-    {
-      title: "Users",
-      url: "/users",
-      icon: UserCheck,
-    },
-    {
-      title: "KYC Submissions",
-      url: "/kyc-submissions",
-      icon: FileText,
-    },
-    {
-      title: "Trading Pairs",
-      url: "/trading-pairs",
-      icon: ArrowRightLeft,
-    },
-  ]
+  {
+    title: "Dashboard",
+    url: "/",
+    icon: Home,
+  },
+  // {
+  //   title: "Sub Accounts", 
+  //   url: "/subaccounts",
+  //   icon: Users,
+  // },
+  // {
+  //   title: "Transfers",
+  //   url: "/transfers", 
+  //   icon: ArrowLeftRight,
+  // },
+  {
+    title: "Deposits",
+    url: "/deposits",
+    icon: Wallet,
+  },
+  {
+    title: "Withdrawals",
+    url: "/withdrawals",
+    icon: ArrowUpRight,
+  },
+  // {
+  //   title: "Rebates",
+  //   url: "/rebates",
+  //   icon: TrendingUp,
+  // },
+  {
+    title: "Users",
+    url: "/users",
+    icon: UserCheck,
+  },
+  {
+    title: "KYC Submissions",
+    url: "/kyc-submissions",
+    icon: FileText,
+  },
+  {
+    title: "Trading Pairs",
+    url: "/trading-pairs",
+    icon: ArrowRightLeft,
+  },
+];
 
 export function AppSidebar() {
-  const location = useLocation()
-  const navigate = useNavigate() 
-  const { open } = useSidebar()
-  const { admin, logout } = useAuthStore()
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { open } = useSidebar();
+  const { admin, logout } = useAuthStore();
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
-  
+    await logout();
+    navigate('/login');
+  };
+
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader>
@@ -109,12 +110,12 @@ export function AppSidebar() {
                   </div>
                 )}
               </div>
-             
+
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      
+
       <SidebarContent>
         <SidebarGroup>
           {open && <SidebarGroupLabel>Navigation</SidebarGroupLabel>}
@@ -122,8 +123,8 @@ export function AppSidebar() {
             <SidebarMenu>
               {navMain.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
+                  <SidebarMenuButton
+                    asChild
                     tooltip={!open ? item.title : undefined}
                     className={location.pathname === item.url ? "bg-accent text-accent-foreground" : ""}
                   >
@@ -138,14 +139,14 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
-      <SidebarFooter>
-        <SidebarMenu>
+
+      <SidebarFooter className="w-full">
+        <SidebarMenu className="w-full">
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={handleLogout}
               tooltip={!open ? "Logout" : undefined}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="text-red-600 hover:text-red-700 w-full hover:bg-red-50"
             >
               <LogOut className="h-4 w-4" />
               {open && <span>Logout</span>}
@@ -160,9 +161,9 @@ export function AppSidebar() {
                 <>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">{admin?.name || 'Admin'}</span>
-                    <span className="truncate text-xs">{admin?.email || 'admin@rva.com'}</span>
+                    <span className="truncate text-xs">{cipherEmail(admin?.email)}</span>
                   </div>
-                  <ChevronUp className="ml-auto h-4 w-4" />
+                  {/* <ChevronUp className="ml-auto h-4 w-4" /> */}
                 </>
               )}
             </div>
@@ -170,5 +171,5 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

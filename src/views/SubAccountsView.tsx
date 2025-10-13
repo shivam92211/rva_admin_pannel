@@ -23,6 +23,7 @@ import {
 import { Plus, Search, Edit, Trash2, Key, RefreshCw } from 'lucide-react'
 import { kucoinApi } from '@/services/kucoinApi'
 import type { SubAccount, ApiKeyInfo, CreateSubAccountRequest, CreateApiKeyRequest, ModifyApiKeyRequest } from '@/types/kucoin'
+import RefreshButton from '@/components/common/RefreshButton';
 
 interface SubAccountWithApiKeys extends SubAccount {
   apiKeys: ApiKeyInfo[]
@@ -365,10 +366,7 @@ const SubAccountsView: React.FC = () => {
         description="Manage your broker sub-accounts and their API keys"
       >
         <div className="flex gap-2">
-          <Button variant="outline" onClick={loadSubAccounts} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <RefreshButton onClick={loadSubAccounts} />
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
