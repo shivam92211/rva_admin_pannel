@@ -1,6 +1,6 @@
-import React from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Device, RefreshToken } from '@/services/userApi'
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Device, RefreshToken } from '@/services/userApi';
 import {
   Monitor,
   Smartphone,
@@ -13,58 +13,60 @@ import {
   CheckCircle,
   XCircle,
   Calendar
-} from 'lucide-react'
+} from 'lucide-react';
+import { obfuscateText, obfuscateIpAddress } from '@/utils/security';
 
 interface DeviceInfoProps {
-  device: Device
+  device: Device;
+  showSensitiveData?: boolean;
 }
 
-export const DeviceInfo: React.FC<DeviceInfoProps> = ({ device }) => {
+export const DeviceInfo: React.FC<DeviceInfoProps> = ({ device, showSensitiveData = false }) => {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
-  }
+    return new Date(dateString).toLocaleString();
+  };
 
   const getDeviceIcon = (userAgent: string) => {
-    const ua = userAgent.toLowerCase()
+    const ua = userAgent.toLowerCase();
     if (ua.includes('mobile') || ua.includes('iphone') || ua.includes('android')) {
-      return <Smartphone className="h-4 w-4" />
+      return <Smartphone className="h-4 w-4" />;
     } else if (ua.includes('ipad') || ua.includes('tablet')) {
-      return <Tablet className="h-4 w-4" />
+      return <Tablet className="h-4 w-4" />;
     }
-    return <Monitor className="h-4 w-4" />
-  }
+    return <Monitor className="h-4 w-4" />;
+  };
 
   const getDeviceType = (userAgent: string) => {
-    const ua = userAgent.toLowerCase()
+    const ua = userAgent.toLowerCase();
     if (ua.includes('mobile') || ua.includes('iphone') || ua.includes('android')) {
-      return 'Mobile'
+      return 'Mobile';
     } else if (ua.includes('ipad') || ua.includes('tablet')) {
-      return 'Tablet'
+      return 'Tablet';
     }
-    return 'Desktop'
-  }
+    return 'Desktop';
+  };
 
   const getBrowserInfo = (userAgent: string) => {
-    const ua = userAgent.toLowerCase()
-    if (ua.includes('chrome')) return 'Chrome'
-    if (ua.includes('firefox')) return 'Firefox'
-    if (ua.includes('safari')) return 'Safari'
-    if (ua.includes('edge')) return 'Edge'
-    return 'Unknown'
-  }
+    const ua = userAgent.toLowerCase();
+    if (ua.includes('chrome')) return 'Chrome';
+    if (ua.includes('firefox')) return 'Firefox';
+    if (ua.includes('safari')) return 'Safari';
+    if (ua.includes('edge')) return 'Edge';
+    return 'Unknown';
+  };
 
   const getOSInfo = (userAgent: string) => {
-    const ua = userAgent.toLowerCase()
-    if (ua.includes('windows')) return 'Windows'
-    if (ua.includes('mac os')) return 'macOS'
-    if (ua.includes('linux')) return 'Linux'
-    if (ua.includes('android')) return 'Android'
-    if (ua.includes('ios')) return 'iOS'
-    return 'Unknown'
-  }
+    const ua = userAgent.toLowerCase();
+    if (ua.includes('windows')) return 'Windows';
+    if (ua.includes('mac os')) return 'macOS';
+    if (ua.includes('linux')) return 'Linux';
+    if (ua.includes('android')) return 'Android';
+    if (ua.includes('ios')) return 'iOS';
+    return 'Unknown';
+  };
 
-  const activeTokens = device.refreshTokens.filter(token => token.isActive)
-  const expiredTokens = device.refreshTokens.filter(token => !token.isActive)
+  const activeTokens = device.refreshTokens.filter(token => token.isActive);
+  const expiredTokens = device.refreshTokens.filter(token => !token.isActive);
 
   return (
     <div className="border rounded-lg p-4 space-y-4">
@@ -88,7 +90,9 @@ export const DeviceInfo: React.FC<DeviceInfoProps> = ({ device }) => {
           <div className="flex items-center gap-2">
             <Globe className="h-4 w-4 text-muted-foreground" />
             <span className="font-medium">IP:</span>
-            <span className="font-mono bg-muted px-1 rounded">{device.ipAddress}</span>
+            <span className="font-mono bg-muted px-1 rounded">
+              {showSensitiveData ? device.ipAddress : obfuscateIpAddress(device.ipAddress)}
+            </span>
           </div>
         )}
 
@@ -97,7 +101,12 @@ export const DeviceInfo: React.FC<DeviceInfoProps> = ({ device }) => {
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-muted-foreground" />
             <span className="font-medium">Location:</span>
-            <span>{device.location.city}, {device.location.country}</span>
+            <span>
+              {showSensitiveData
+                ? `${device.location.city}, ${device.location.country}`
+                : `${obfuscateText(device.location.city)}, ${obfuscateText(device.location.country)}`
+              }
+            </span>
           </div>
         )}
 
@@ -109,12 +118,17 @@ export const DeviceInfo: React.FC<DeviceInfoProps> = ({ device }) => {
             <span>{device.timezone}</span>
           </div>
         )}
+      </div>
+
+      <div className="">
 
         {/* Fingerprint */}
         <div className="flex items-center gap-2">
           <Fingerprint className="h-4 w-4 text-muted-foreground" />
           <span className="font-medium">Fingerprint:</span>
-          <span className="font-mono text-xs bg-muted px-1 rounded">{device.fingerprint}</span>
+          <span className="font-mono text-xs bg-muted px-1 rounded flex flex-wrap">
+            {device.fingerprint.slice(0, showSensitiveData ? device.fingerprint.length : 4) + (showSensitiveData ? '' : '***')}
+          </span>
         </div>
       </div>
 
@@ -188,7 +202,7 @@ export const DeviceInfo: React.FC<DeviceInfoProps> = ({ device }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default DeviceInfo
+export default DeviceInfo;

@@ -7,9 +7,17 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { type User, type UserDevicesResponse, userApi } from '@/services/userApi'
-import { User as UserIcon, Mail, Phone, Calendar, Shield, ShieldCheck, Key, CheckCircle, XCircle, Monitor, Loader2 } from 'lucide-react'
+import { User as UserIcon, Mail, Phone, Calendar, Shield, ShieldCheck, Key, CheckCircle, XCircle, Monitor, Loader2, Eye, EyeOff } from 'lucide-react'
 import DeviceInfo from './DeviceInfo'
+import { 
+  cipherEmail, 
+  cypherPhone, 
+  obfuscateName, 
+  obfuscateUserId, 
+  obfuscateText
+} from '@/utils/security'
 
 interface UserDetailsDialogProps {
   user: User | null
@@ -25,6 +33,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   const [devices, setDevices] = useState<UserDevicesResponse | null>(null)
   const [loadingDevices, setLoadingDevices] = useState(false)
   const [devicesError, setDevicesError] = useState<string | null>(null)
+  const [showSensitiveData, setShowSensitiveData] = useState(false) // GDPR protection - off by default
 
   // Fetch devices when dialog opens and user is selected
   useEffect(() => {
@@ -64,16 +73,59 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     )
   }
 
+  // Helper functions for displaying sensitive data with GDPR protection
+  const displayEmail = (email: string) => {
+    return showSensitiveData ? email : cipherEmail(email)
+  }
+
+  const displayPhone = (phone: string) => {
+    return showSensitiveData ? phone : cypherPhone(phone)
+  }
+
+  const displayName = (name: string) => {
+    return showSensitiveData ? name : obfuscateName(name)
+  }
+
+  const displayUserId = (id: string) => {
+    return showSensitiveData ? id : obfuscateUserId(id)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserIcon className="h-5 w-5" />
-            User Details - {user.username}
+          <DialogTitle className="flex items-center gap-2 justify-between">
+            <div className="flex items-center gap-2">
+              <UserIcon className="h-5 w-5" />
+              User Details - {showSensitiveData ? user.username : obfuscateText(user.username)}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSensitiveData(!showSensitiveData)}
+              className="flex items-center gap-2 text-sm"
+              title={showSensitiveData ? "Hide sensitive data (GDPR)" : "Show sensitive data"}
+            >
+              {showSensitiveData ? (
+                <>
+                  <EyeOff className="h-4 w-4" />
+                  Hide Data
+                </>
+              ) : (
+                <>
+                  <Eye className="h-4 w-4" />
+                  Show Data
+                </>
+              )}
+            </Button>
           </DialogTitle>
           <DialogDescription>
-            Complete information for user {user.email}
+            Complete information for user {displayEmail(user.email)}
+            {!showSensitiveData && (
+              <span className="block text-xs text-amber-600 mt-1">
+                🔒 Sensitive data is hidden for GDPR compliance. Click "Show Data" to reveal.
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -84,30 +136,30 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">User ID</label>
-                <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{user.id}</p>
+                <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{displayUserId(user.id)}</p>
               </div>
               {user.uid && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground">UID</label>
-                  <p className="text-sm">{user.uid}</p>
+                  <p className="text-sm">{displayUserId(String(user.uid))}</p>
                 </div>
               )}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Username</label>
-                <p className="text-sm font-medium">{user.username}</p>
+                <p className="text-sm font-medium">{showSensitiveData ? user.username : obfuscateText(user.username)}</p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Email</label>
                 <p className="text-sm flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  {user.email}
+                  {displayEmail(user.email)}
                 </p>
               </div>
               {(user.firstName || user.lastName) && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground">Full Name</label>
                   <p className="text-sm">
-                    {`${user.firstName || ''} ${user.lastName || ''}`.trim() || '—'}
+                    {displayName(`${user.firstName || ''} ${user.lastName || ''}`.trim()) || '—'}
                   </p>
                 </div>
               )}
@@ -116,7 +168,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                   <label className="text-sm font-medium text-muted-foreground">Phone</label>
                   <p className="text-sm flex items-center gap-2">
                     <Phone className="h-4 w-4" />
-                    {user.phone || user.phoneNumber}
+                    {displayPhone(user.phone || user.phoneNumber || '')}
                   </p>
                 </div>
               )}
@@ -266,7 +318,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                   Found {devices.devices.length} device{devices.devices.length !== 1 ? 's' : ''} associated with this user
                 </p>
                 {devices.devices.map((device) => (
-                  <DeviceInfo key={device.id} device={device} />
+                  <DeviceInfo key={device.id} device={device} showSensitiveData={showSensitiveData} />
                 ))}
               </div>
             ) : (
@@ -282,11 +334,17 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
             <div className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">Profile Picture</h3>
               <div className="flex justify-center">
-                <img
-                  src={user.profilePicture}
-                  alt={`${user.username}'s profile`}
-                  className="w-24 h-24 rounded-full object-cover border"
-                />
+                {showSensitiveData ? (
+                  <img
+                    src={user.profilePicture}
+                    alt={`${user.username}'s profile`}
+                    className="w-24 h-24 rounded-full object-cover border"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-muted border flex items-center justify-center">
+                    <span className="text-muted-foreground text-xs">Hidden</span>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react'
-import { PageHeader } from '@/components/PageHeader'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import React, { useState, useEffect } from 'react';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -16,31 +16,32 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Search, RefreshCw, ChevronLeft, ChevronRight, Power, PowerOff, Shield, ShieldCheck } from 'lucide-react'
-import { userApi, type User, type PaginatedUsersResponse } from '@/services/userApi'
-import { UserDetailsDialog } from '@/components/UserDetailsDialog'
+} from '@/components/ui/table';
+import { Search, RefreshCw, ChevronLeft, ChevronRight, Power, PowerOff, Shield, ShieldCheck } from 'lucide-react';
+import { userApi, type User, type PaginatedUsersResponse } from '@/services/userApi';
+import { UserDetailsDialog } from '@/components/UserDetailsDialog';
 import RefreshButton from '@/components/common/RefreshButton';
+import { cipherEmail } from '@/utils/security';
 
 const UsersView: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [whitelistFilter, setWhitelistFilter] = useState<string>('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [total, setTotal] = useState(0)
-  const pageSize = 10
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [whitelistFilter, setWhitelistFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 10;
 
   // User details dialog state
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [loadingUserDetails, setLoadingUserDetails] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [loadingUserDetails, setLoadingUserDetails] = useState(false);
 
 
   const loadUsers = React.useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const response: PaginatedUsersResponse = await userApi.getUsers({
         page: currentPage,
@@ -48,44 +49,44 @@ const UsersView: React.FC = () => {
         search: searchTerm || undefined,
         status: statusFilter === 'all' ? undefined : statusFilter,
         whitelist: whitelistFilter === 'all' ? undefined : whitelistFilter
-      })
+      });
 
-      setUsers(response.users)
-      setTotalPages(response.pagination.totalPages)
-      setTotal(response.pagination.totalCount)
+      setUsers(response.users);
+      setTotalPages(response.pagination.totalPages);
+      setTotal(response.pagination.totalCount);
     } catch (error: any) {
-      console.error('Failed to load users:', error)
-      setUsers([])
-      setTotalPages(1)
-      setTotal(0)
+      console.error('Failed to load users:', error);
+      setUsers([]);
+      setTotalPages(1);
+      setTotal(0);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [currentPage, pageSize, searchTerm, statusFilter, whitelistFilter])
+  }, [currentPage, pageSize, searchTerm, statusFilter, whitelistFilter]);
 
   useEffect(() => {
-    loadUsers()
-  }, [loadUsers])
+    loadUsers();
+  }, [loadUsers]);
 
   const handleSearch = (value: string) => {
-    setSearchTerm(value)
-    setCurrentPage(1) // Reset to first page when searching
-  }
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
 
   const handleStatusFilter = (value: string) => {
-    setStatusFilter(value)
-    setCurrentPage(1) // Reset to first page when filtering
-  }
+    setStatusFilter(value);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
 
   const handleWhitelistFilter = (value: string) => {
-    setWhitelistFilter(value)
-    setCurrentPage(1) // Reset to first page when filtering
-  }
+    setWhitelistFilter(value);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
 
   const handleToggleUserStatus = async (userId: string) => {
     try {
-      setLoading(true)
-      const result = await userApi.toggleUserStatus(userId)
+      setLoading(true);
+      const result = await userApi.toggleUserStatus(userId);
 
       // Update the user in the local state
       setUsers(prevUsers =>
@@ -94,22 +95,22 @@ const UsersView: React.FC = () => {
             ? { ...user, isActive: result.isActive }
             : user
         )
-      )
+      );
 
       // Optionally show a success message or toast
-      console.log(result.message)
+      console.log(result.message);
     } catch (error: any) {
-      console.error('Failed to toggle user status:', error)
+      console.error('Failed to toggle user status:', error);
       // Optionally show error message
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleToggleWithdrawalWhitelist = async (userId: string) => {
     try {
-      setLoading(true)
-      const result = await userApi.toggleWithdrawalWhitelist(userId)
+      setLoading(true);
+      const result = await userApi.toggleWithdrawalWhitelist(userId);
 
       // Update the user in the local state
       setUsers(prevUsers =>
@@ -118,64 +119,62 @@ const UsersView: React.FC = () => {
             ? { ...user, withdrawalWhitelist: result.withdrawalWhitelist }
             : user
         )
-      )
+      );
 
       // Optionally show a success message or toast
-      console.log(result.message)
+      console.log(result.message);
     } catch (error: any) {
-      console.error('Failed to toggle withdrawal whitelist:', error)
+      console.error('Failed to toggle withdrawal whitelist:', error);
       // Optionally show error message
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page)
+      setCurrentPage(page);
     }
-  }
+  };
 
   const handleUserRowClick = async (user: User) => {
     try {
-      setLoadingUserDetails(true)
-      setDialogOpen(true)
+      setLoadingUserDetails(true);
+      setDialogOpen(true);
 
       // Fetch detailed user data
-      const detailedUser = await userApi.getUserById(user.id)
-      setSelectedUser(detailedUser)
+      const detailedUser = await userApi.getUserById(user.id);
+      setSelectedUser(detailedUser);
     } catch (error: any) {
-      console.error('Failed to load user details:', error)
+      console.error('Failed to load user details:', error);
       // Show basic user data if detailed fetch fails
-      setSelectedUser(user)
+      setSelectedUser(user);
     } finally {
-      setLoadingUserDetails(false)
+      setLoadingUserDetails(false);
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString()
-  }
+    return new Date(dateString).toLocaleDateString();
+  };
 
   const getStatusBadge = (isActive: boolean) => {
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-      }`}>
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
         {isActive ? 'Active' : 'Inactive'}
       </span>
-    )
-  }
+    );
+  };
 
   const getWhitelistBadge = (isWhitelisted: boolean | undefined) => {
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        isWhitelisted ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-      }`}>
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isWhitelisted ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+        }`}>
         {isWhitelisted ? 'Whitelisted' : 'Not Whitelisted'}
       </span>
-    )
-  }
+    );
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -266,7 +265,7 @@ const UsersView: React.FC = () => {
                         onClick={() => handleUserRowClick(user)}
                       >
                         <TableCell className="font-medium">{user.username}</TableCell>
-                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                        <TableCell className="text-muted-foreground">{cipherEmail(user.email)}</TableCell>
                         <TableCell>
                           {user.firstName || user.lastName
                             ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
@@ -288,38 +287,36 @@ const UsersView: React.FC = () => {
                         <TableCell>
                           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                             <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleToggleUserStatus(user.id)}
-                            disabled={loading}
-                            className={`flex items-center gap-2 ${
-                              user.isActive
-                                ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                                : 'hover:bg-green-50 hover:text-green-600 hover:border-green-200'
-                            }`}
-                          >
-                            {user.isActive ? (
-                              <>
-                                <PowerOff className="h-4 w-4" />
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <Power className="h-4 w-4" />
-                                Activate
-                              </>
-                            )}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleToggleUserStatus(user.id)}
+                              disabled={loading}
+                              className={`flex items-center gap-2 ${user.isActive
+                                  ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                                  : 'hover:bg-green-50 hover:text-green-600 hover:border-green-200'
+                                }`}
+                            >
+                              {user.isActive ? (
+                                <>
+                                  <PowerOff className="h-4 w-4" />
+                                  Deactivate
+                                </>
+                              ) : (
+                                <>
+                                  <Power className="h-4 w-4" />
+                                  Activate
+                                </>
+                              )}
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleToggleWithdrawalWhitelist(user.id)}
                               disabled={loading}
-                              className={`flex items-center gap-2 ${
-                                user.withdrawalWhitelist
+                              className={`flex items-center gap-2 ${user.withdrawalWhitelist
                                   ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
                                   : 'hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
-                              }`}
+                                }`}
                             >
                               {user.withdrawalWhitelist ? (
                                 <>
@@ -364,13 +361,13 @@ const UsersView: React.FC = () => {
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter(page => {
                     // Show first page, last page, current page, and pages around current
-                    if (page === 1 || page === totalPages) return true
-                    if (Math.abs(page - currentPage) <= 1) return true
-                    return false
+                    if (page === 1 || page === totalPages) return true;
+                    if (Math.abs(page - currentPage) <= 1) return true;
+                    return false;
                   })
                   .map((page, index, pages) => {
                     // Add ellipsis if there's a gap
-                    const showEllipsis = index > 0 && page - pages[index - 1] > 1
+                    const showEllipsis = index > 0 && page - pages[index - 1] > 1;
 
                     return (
                       <React.Fragment key={page}>
@@ -385,7 +382,7 @@ const UsersView: React.FC = () => {
                           {page}
                         </Button>
                       </React.Fragment>
-                    )
+                    );
                   })}
 
                 <Button
@@ -410,7 +407,7 @@ const UsersView: React.FC = () => {
         onOpenChange={setDialogOpen}
       />
     </div>
-  )
-}
+  );
+};
 
-export default UsersView
+export default UsersView;
