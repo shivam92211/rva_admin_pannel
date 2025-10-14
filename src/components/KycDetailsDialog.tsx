@@ -1,13 +1,14 @@
-import React from 'react'
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
-import { type KycSubmission } from '@/services/kycSubmissionApi'
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { type KycSubmission } from '@/services/kycSubmissionApi';
 import {
   Mail,
   Phone,
@@ -18,13 +19,23 @@ import {
   Clock,
   AlertCircle,
   IdCard,
-  MapPin
-} from 'lucide-react'
+  MapPin,
+  Eye,
+  EyeOff
+} from 'lucide-react';
+import {
+  cipherEmail,
+  cypherPhone,
+  obfuscateName,
+  obfuscateUserId,
+  obfuscateText,
+  maskString
+} from '@/utils/security';
 
 interface KycDetailsDialogProps {
-  kycSubmission: KycSubmission | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  kycSubmission: KycSubmission | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
@@ -32,15 +43,42 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  if (!kycSubmission) return null
+  const [showSensitiveData, setShowSensitiveData] = useState(false); // GDPR protection - off by default
+
+  if (!kycSubmission) return null;
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
-  }
+    return new Date(dateString).toLocaleString();
+  };
 
   const getBadgeVariant = (isTrue: boolean) => {
-    return isTrue ? 'default' : 'secondary'
-  }
+    return isTrue ? 'default' : 'secondary';
+  };
+
+  // Helper functions for displaying sensitive data with GDPR protection
+  const displayEmail = (email: string) => {
+    return showSensitiveData ? email : cipherEmail(email);
+  };
+
+  const displayPhone = (phone: string) => {
+    return showSensitiveData ? phone : cypherPhone(phone);
+  };
+
+  const displayName = (name: string) => {
+    return showSensitiveData ? name : obfuscateName(name);
+  };
+
+  const displayUserId = (id: string) => {
+    return showSensitiveData ? id : obfuscateUserId(id);
+  };
+
+  const displayIdNumber = (idNumber: string) => {
+    return showSensitiveData ? idNumber : maskString(idNumber, 2, 2);
+  };
+
+  const displaySensitiveText = (text: string) => {
+    return showSensitiveData ? text : obfuscateText(text);
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -48,66 +86,106 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
       PROCESSING: { color: 'bg-blue-100 text-blue-800', icon: AlertCircle },
       APPROVED: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
       REJECTED: { color: 'bg-red-100 text-red-800', icon: XCircle }
-    }
+    };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING
-    const Icon = config.icon
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING;
+    const Icon = config.icon;
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
         <Icon className="h-3 w-3 mr-1" />
         {status}
       </span>
-    )
-  }
+    );
+  };
 
   const getLevelBadge = (level: number) => {
     const levelColors = {
       1: 'bg-gray-100 text-gray-800',
       2: 'bg-orange-100 text-orange-800',
       3: 'bg-purple-100 text-purple-800'
-    }
+    };
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${levelColors[level as keyof typeof levelColors] || levelColors[1]}`}>
         Level {level}
       </span>
-    )
-  }
+    );
+  };
 
   const getVerificationIcon = (isVerified: boolean) => {
     return isVerified ? (
       <CheckCircle className="h-4 w-4 text-green-500" />
     ) : (
       <XCircle className="h-4 w-4 text-red-500" />
-    )
-  }
+    );
+  };
 
-  const ImagePreview = ({ src, alt, label }: { src: string; alt: string; label: string }) => (
+  const ImagePreview = ({ src, alt, label }: { src: string; alt: string; label: string; }) => (
     <div className="space-y-2">
       <label className="text-sm font-medium text-muted-foreground">{label}</label>
       <div className="border rounded-lg p-2 bg-gray-50">
-        <img
-          src={src}
-          alt={alt}
-          className="w-full h-32 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={() => window.open(src, '_blank')}
-        />
-        <p className="text-xs text-center text-muted-foreground mt-1">Click to view full size</p>
+        {showSensitiveData ? (
+          <>
+            <img
+              src={src}
+              alt={alt}
+              className="w-full h-32 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => window.open(src, '_blank')}
+            />
+            <p className="text-xs text-center text-muted-foreground mt-1">Click to view full size</p>
+          </>
+        ) : (
+          <div className="w-full h-32 bg-muted rounded flex items-center justify-center">
+            <div className="text-center">
+              <EyeOff className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Image Hidden</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
-  )
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            KYC Submission Details - {kycSubmission.firstName} {kycSubmission.lastName}
+          <DialogTitle className="flex items-center gap-2 justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              KYC Submission Details - {showSensitiveData
+                ? `${kycSubmission.firstName} ${kycSubmission.lastName}`
+                : `${displayName(kycSubmission.firstName)} ${displayName(kycSubmission.lastName)}`
+              }
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSensitiveData(!showSensitiveData)}
+              className="flex items-center gap-2 text-sm"
+              title={showSensitiveData ? "Hide sensitive data (GDPR)" : "Show sensitive data"}
+            >
+              {showSensitiveData ? (
+                <>
+                  <EyeOff className="h-4 w-4" />
+                  Hide Data
+                </>
+              ) : (
+                <>
+                  <Eye className="h-4 w-4" />
+                  Show Data
+                </>
+              )}
+            </Button>
           </DialogTitle>
           <DialogDescription>
-            Complete KYC submission information for {kycSubmission.user.username}
+            Complete KYC submission information for {showSensitiveData ? kycSubmission.user.username : displaySensitiveText(kycSubmission.user.username)}
+            {!showSensitiveData && (
+              <span className="block text-xs text-amber-600 mt-1">
+                🔒 Sensitive data is hidden for GDPR compliance. Click "Show Data" to reveal.
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -139,17 +217,17 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">User ID</label>
-                <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{kycSubmission.user.id}</p>
+                <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{displayUserId(kycSubmission.user.id)}</p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Username</label>
-                <p className="text-sm font-medium">{kycSubmission.user.username}</p>
+                <p className="text-sm font-medium">{showSensitiveData ? kycSubmission.user.username : displaySensitiveText(kycSubmission.user.username)}</p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Email</label>
                 <p className="text-sm flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  {kycSubmission.user.email}
+                  {displayEmail(kycSubmission.user.email)}
                 </p>
               </div>
               {kycSubmission.user.phone && (
@@ -157,7 +235,7 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
                   <label className="text-sm font-medium text-muted-foreground">Phone</label>
                   <p className="text-sm flex items-center gap-2">
                     <Phone className="h-4 w-4" />
-                    {kycSubmission.user.phone}
+                    {displayPhone(kycSubmission.user.phone)}
                   </p>
                 </div>
               )}
@@ -204,18 +282,28 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                <p className="text-sm font-medium">{kycSubmission.firstName} {kycSubmission.lastName}</p>
+                <p className="text-sm font-medium">
+                  {showSensitiveData
+                    ? `${kycSubmission.firstName} ${kycSubmission.lastName}`
+                    : `${displayName(kycSubmission.firstName)} ${displayName(kycSubmission.lastName)}`
+                  }
+                </p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
-                <p className="text-sm">{formatDate(kycSubmission.dateOfBirth)}</p>
+                <p className="text-sm">
+                  {showSensitiveData
+                    ? formatDate(kycSubmission.dateOfBirth)
+                    : "***/**/****"
+                  }
+                </p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
                   Nationality
                 </label>
-                <p className="text-sm">{kycSubmission.nationality}</p>
+                <p className="text-sm">{showSensitiveData ? kycSubmission.nationality : displaySensitiveText(kycSubmission.nationality)}</p>
               </div>
             </div>
           </div>
@@ -233,12 +321,17 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">ID Number</label>
-                <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{kycSubmission.idNumber}</p>
+                <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{displayIdNumber(kycSubmission.idNumber)}</p>
               </div>
               {kycSubmission.expireDate && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground">Expiry Date</label>
-                  <p className="text-sm">{formatDate(kycSubmission.expireDate)}</p>
+                  <p className="text-sm">
+                    {showSensitiveData
+                      ? formatDate(kycSubmission.expireDate)
+                      : "***/**/****"
+                    }
+                  </p>
                 </div>
               )}
             </div>
@@ -305,13 +398,15 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
               {kycSubmission.reviewedBy && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground">Reviewed By</label>
-                  <p className="text-sm">{kycSubmission.reviewedBy}</p>
+                  <p className="text-sm">{showSensitiveData ? kycSubmission.reviewedBy : displaySensitiveText(kycSubmission.reviewedBy)}</p>
                 </div>
               )}
               {kycSubmission.rejectionReason && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground">Rejection Reason</label>
-                  <p className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded">{kycSubmission.rejectionReason}</p>
+                  <p className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded">
+                    {showSensitiveData ? kycSubmission.rejectionReason : displaySensitiveText(kycSubmission.rejectionReason)}
+                  </p>
                 </div>
               )}
             </div>
@@ -331,7 +426,7 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
                 {kycSubmission.kucoinSubmissionId && (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">KuCoin Submission ID</label>
-                    <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{kycSubmission.kucoinSubmissionId}</p>
+                    <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{displayUserId(kycSubmission.kucoinSubmissionId)}</p>
                   </div>
                 )}
                 {kycSubmission.checkedAt && (
@@ -343,7 +438,9 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
                 {kycSubmission.errorMessage && (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Error Message</label>
-                    <p className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded">{kycSubmission.errorMessage}</p>
+                    <p className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded">
+                      {showSensitiveData ? kycSubmission.errorMessage : displaySensitiveText(kycSubmission.errorMessage)}
+                    </p>
                   </div>
                 )}
               </div>
@@ -356,7 +453,7 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Submission ID</label>
-                <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{kycSubmission.id}</p>
+                <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{displayUserId(kycSubmission.id)}</p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -377,5 +474,5 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
