@@ -1,10 +1,15 @@
 import { useSnackbarMsg } from '@/hooks/snackbar';
-import React, { useEffect } from 'react'
+import React, { useEffect } from 'react';
 // @ts-ignore
-import SnackbarProvider, { useSnackbar } from 'react-simple-snackbar'
+import SnackbarProvider, { useSnackbar } from 'react-simple-snackbar';
+
+const commonStyle = {
+  zIndex: 10000,
+};
 
 const getLightModeOptions = (type: string = 'info') => {
   const baseStyle = {
+    ...commonStyle,
     position: 'bottom-right' as const,
     style: {
       border: '1px solid #81838bff',
@@ -58,6 +63,7 @@ const getLightModeOptions = (type: string = 'info') => {
 
 const getDarkModeOptions = (type: string = 'info') => {
   const baseStyle = {
+    ...commonStyle,
     position: 'bottom-right' as const,
     style: {
       borderRadius: '8px',
@@ -143,15 +149,15 @@ export function SnackbarInternal() {
     if (sBar) {
       dOpen(sBar.msg);
     } else {
-      lOpen(false)
-      dClose(false)
+      lOpen(false);
+      dClose(false);
     }
   }, [sBar]);
 
   return null;
 }
 
-export default function SnackbarWrap({ children }: { children?: React.ReactNode }) {
+export default function SnackbarWrap({ children }: { children?: React.ReactNode; }) {
 
 
   return (
@@ -161,5 +167,5 @@ export default function SnackbarWrap({ children }: { children?: React.ReactNode 
         {children}
       </SnackbarProvider>
     </>
-  )
+  );
 }

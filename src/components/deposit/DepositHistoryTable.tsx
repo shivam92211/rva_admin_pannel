@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search, RefreshCw, Eye, ExternalLink, Copy } from 'lucide-react';
+import { Search, RefreshCw, Eye, EyeOff, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import RefreshButton from '../common/RefreshButton';
-import { useSnackbarMsg } from '@/hooks/snackbar';
+import CopyButton from '../common/CopyButton';
+import { cipherEmail, obfuscateText, maskString } from '@/utils/security';
 
 export const DepositHistoryTable: React.FC = () => {
   const {
@@ -22,18 +23,27 @@ export const DepositHistoryTable: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [, setMsg] = useSnackbarMsg();
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      // You could add a toast notification here if you have one
-      setMsg({
-        msg: 'Address copied to clipboard',
-        type: 'success'
-      });
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
+  const [showSensitiveData, setShowSensitiveData] = useState(false);
+
+  // Display helper functions for GDPR compliance
+  const displayEmail = (email: string | undefined | null) => {
+    return showSensitiveData ? (email || 'N/A') : cipherEmail(email || undefined);
+  };
+
+  const displayAddress = (address: string | undefined | null) => {
+    return showSensitiveData ? (address || 'N/A') : maskString(address || undefined, 6, 6);
+  };
+
+  const displayTxId = (txId: string | undefined | null) => {
+    return showSensitiveData ? (txId || 'N/A') : maskString(txId || undefined, 6, 6);
+  };
+
+  const displayUserId = (userId: string | undefined | null) => {
+    return showSensitiveData ? (userId || 'N/A') : obfuscateText(userId || undefined);
+  };
+
+  const displayText = (text: string | undefined | null) => {
+    return showSensitiveData ? (text || 'N/A') : obfuscateText(text || undefined);
   };
 
   // Filter deposits based on search and filters
@@ -125,7 +135,7 @@ export const DepositHistoryTable: React.FC = () => {
         <div className="relative col-span-2">
           <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <Input
-            placeholder="Search by txId, address, currency, user email..."
+            placeholder="Search by txId, currency... (sensitive data hidden in table)"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
@@ -182,6 +192,7 @@ export const DepositHistoryTable: React.FC = () => {
                       <code className="text-sm text-blue-300 bg-gray-700/50 px-2 py-1 rounded">
                         {truncateHash(deposit.walletTxId || deposit.id)}
                       </code>
+                      {deposit.walletTxId && <CopyButton text={deposit.walletTxId} />}
                       {/* {deposit.walletTxId && (
                         <a
                           href={getBlockExplorerUrl(deposit.chain, deposit.walletTxId)}
@@ -202,13 +213,7 @@ export const DepositHistoryTable: React.FC = () => {
                         {truncateAddress(deposit.address)}
                       </code>
                       {deposit.address && (
-                        <button
-                          onClick={() => copyToClipboard(deposit.address)}
-                          className="text-gray-400 hover:text-blue-400 transition-colors p-1"
-                          title="Copy address to clipboard"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </button>
+                        <CopyButton text={deposit.address} />
                       )}
                     </div>
                   </td>
@@ -216,11 +221,11 @@ export const DepositHistoryTable: React.FC = () => {
                   <td className="py-3 px-4">
                     <div className="text-sm">
                       <div className="text-white font-medium">
-                        {deposit.user?.email || 'N/A'}
+                        {obfuscateText(deposit.user?.id)}
                       </div>
                       {deposit.user?.username && (
                         <div className="text-xs text-gray-400">
-                          @{deposit.user.username}
+                          @{obfuscateText(deposit.user.username)}
                         </div>
                       )}
                     </div>
@@ -276,7 +281,34 @@ export const DepositHistoryTable: React.FC = () => {
       <Dialog open={!!selectedDeposit} onOpenChange={() => clearSelectedDeposit()}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Deposit Details</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Deposit Details</DialogTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSensitiveData(!showSensitiveData)}
+                  className="flex items-center gap-2"
+                >
+                  {showSensitiveData ? (
+                    <>
+                      <EyeOff className="h-4 w-4" />
+                      Hide Data
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4" />
+                      Show Data
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+            {!showSensitiveData && (
+              <p className="text-sm text-muted-foreground mt-2">
+                🔒 Sensitive data is hidden for privacy. Click "Show Data" to view full details.
+              </p>
+            )}
           </DialogHeader>
           {selectedDeposit && (
             <div className="space-y-6">
@@ -286,11 +318,11 @@ export const DepositHistoryTable: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-400">Deposit ID</label>
-                    <p className="font-mono text-sm break-all">{selectedDeposit.id}</p>
+                    <p className="font-mono text-sm break-all">{displayText(selectedDeposit.id)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-400">Wallet TX ID</label>
-                    <p className="font-mono text-sm break-all">{selectedDeposit.walletTxId || 'N/A'}</p>
+                    <p className="font-mono text-sm break-all">{displayTxId(selectedDeposit.walletTxId)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-400">Currency</label>
@@ -334,12 +366,16 @@ export const DepositHistoryTable: React.FC = () => {
                 <h3 className="text-md font-semibold text-white mb-3 border-b border-gray-700 pb-2">User Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <label className="text-sm font-medium text-gray-400">User ID</label>
+                    <p className="text-sm">{displayUserId(selectedDeposit.user?.id)}</p>
+                  </div>
+                  <div>
                     <label className="text-sm font-medium text-gray-400">Email</label>
-                    <p className="text-sm">{selectedDeposit.user?.email || 'N/A'}</p>
+                    <p className="text-sm">{displayEmail(selectedDeposit.user?.email)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-400">Username</label>
-                    <p className="text-sm">{selectedDeposit.user?.username || 'N/A'}</p>
+                    <p className="text-sm">{displayText(selectedDeposit.user?.username)}</p>
                   </div>
                 </div>
               </div>
@@ -350,19 +386,23 @@ export const DepositHistoryTable: React.FC = () => {
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-400">From Address</label>
-                    <p className="font-mono text-sm break-all">{selectedDeposit.address}</p>
+                    <p className="font-mono text-sm break-all">{displayAddress(selectedDeposit.address)}
+                      <CopyButton text={selectedDeposit.address || ''} />
+                    </p>
                   </div>
                   {selectedDeposit.memo && (
                     <div>
                       <label className="text-sm font-medium text-gray-400">Memo</label>
-                      <p className="font-mono text-sm">{selectedDeposit.memo}</p>
+                      <p className="font-mono text-sm">{displayText(selectedDeposit.memo)}</p>
                     </div>
                   )}
                   {selectedDeposit.depositAddress && (
                     <>
                       <div>
                         <label className="text-sm font-medium text-gray-400">Deposit Address (User's Wallet)</label>
-                        <p className="font-mono text-sm break-all">{selectedDeposit.depositAddress.address}</p>
+                        <p className="font-mono text-sm break-all">{displayAddress(selectedDeposit.depositAddress.address)}
+                          <CopyButton text={selectedDeposit.depositAddress.address || ''} />
+                        </p>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -371,12 +411,12 @@ export const DepositHistoryTable: React.FC = () => {
                         </div>
                         <div>
                           <label className="text-sm font-medium text-gray-400">Balance</label>
-                          <p className="text-sm font-mono">{selectedDeposit.depositAddress.balance}</p>
+                          <p className="text-sm font-mono">{showSensitiveData ? selectedDeposit.depositAddress.balance : '***'}</p>
                         </div>
                         {selectedDeposit.depositAddress.contractAddress && (
                           <div className="col-span-2">
                             <label className="text-sm font-medium text-gray-400">Contract Address</label>
-                            <p className="font-mono text-sm break-all">{selectedDeposit.depositAddress.contractAddress}</p>
+                            <p className="font-mono text-sm break-all">{displayAddress(selectedDeposit.depositAddress.contractAddress)}</p>
                           </div>
                         )}
                         <div>
@@ -404,13 +444,13 @@ export const DepositHistoryTable: React.FC = () => {
                   {selectedDeposit.remark && (
                     <div className="col-span-2">
                       <label className="text-sm font-medium text-gray-400">Remark</label>
-                      <p className="text-sm">{selectedDeposit.remark}</p>
+                      <p className="text-sm">{displayText(selectedDeposit.remark)}</p>
                     </div>
                   )}
                   {selectedDeposit.kucoinDepositId && (
                     <div className="col-span-2">
                       <label className="text-sm font-medium text-gray-400">KuCoin Deposit ID</label>
-                      <p className="font-mono text-sm">{selectedDeposit.kucoinDepositId}</p>
+                      <p className="font-mono text-sm">{displayText(selectedDeposit.kucoinDepositId)}</p>
                     </div>
                   )}
                 </div>

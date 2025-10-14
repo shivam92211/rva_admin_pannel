@@ -21,7 +21,7 @@ import { Search, RefreshCw, ChevronLeft, ChevronRight, Power, PowerOff, Shield, 
 import { userApi, type User, type PaginatedUsersResponse } from '@/services/userApi';
 import { UserDetailsDialog } from '@/components/UserDetailsDialog';
 import RefreshButton from '@/components/common/RefreshButton';
-import { cipherEmail } from '@/utils/security';
+import { cipherEmail, maskString } from '@/utils/security';
 
 const UsersView: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -267,9 +267,9 @@ const UsersView: React.FC = () => {
                         <TableCell className="font-medium">{user.username}</TableCell>
                         <TableCell className="text-muted-foreground">{cipherEmail(user.email)}</TableCell>
                         <TableCell>
-                          {user.firstName || user.lastName
+                          {maskString(user.firstName || user.lastName
                             ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-                            : '—'
+                            : '—')
                           }
                         </TableCell>
                         <TableCell className="text-muted-foreground">
@@ -292,8 +292,8 @@ const UsersView: React.FC = () => {
                               onClick={() => handleToggleUserStatus(user.id)}
                               disabled={loading}
                               className={`flex items-center gap-2 ${user.isActive
-                                  ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                                  : 'hover:bg-green-50 hover:text-green-600 hover:border-green-200'
+                                ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                                : 'hover:bg-green-50 hover:text-green-600 hover:border-green-200'
                                 }`}
                             >
                               {user.isActive ? (
@@ -314,8 +314,8 @@ const UsersView: React.FC = () => {
                               onClick={() => handleToggleWithdrawalWhitelist(user.id)}
                               disabled={loading}
                               className={`flex items-center gap-2 ${user.withdrawalWhitelist
-                                  ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                                  : 'hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
+                                ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                                : 'hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
                                 }`}
                             >
                               {user.withdrawalWhitelist ? (
