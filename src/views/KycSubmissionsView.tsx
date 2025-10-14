@@ -20,14 +20,15 @@ import {
 import { Search, RefreshCw, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
 import { kycSubmissionApi, type KycSubmission, type PaginatedKycSubmissionsResponse } from '@/services/kycSubmissionApi'
 import { KycDetailsDialog } from '@/components/KycDetailsDialog'
-import RefreshButton from '@/components/common/RefreshButton';
+import RefreshButton from '@/components/common/RefreshButton'
+import { cipherEmail, obfuscateName, obfuscateText } from '@/utils/security'
 
 const KycSubmissionsView: React.FC = () => {
   const [kycSubmissions, setKycSubmissions] = useState<KycSubmission[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [searchInput, setSearchInput] = useState('') // For the input field
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [levelFilter, setLevelFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
@@ -37,6 +38,16 @@ const KycSubmissionsView: React.FC = () => {
   const [selectedKycSubmission, setSelectedKycSubmission] = useState<KycSubmission | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
+  // Debounce search input
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      setSearchTerm(searchInput)
+      setCurrentPage(1) // Reset to first page when searching
+    }, 500) // 500ms delay
+
+    return () => clearTimeout(debounceTimer)
+  }, [searchInput])
+
   const loadKycSubmissions = React.useCallback(async () => {
     setLoading(true)
     try {
@@ -44,8 +55,7 @@ const KycSubmissionsView: React.FC = () => {
         page: currentPage,
         limit: pageSize,
         search: searchTerm || undefined,
-        status: statusFilter === 'all' ? undefined : statusFilter,
-        level: levelFilter === 'all' ? undefined : levelFilter
+        status: statusFilter === 'all' ? undefined : statusFilter
       })
 
       setKycSubmissions(response.kycSubmissions)
@@ -59,24 +69,18 @@ const KycSubmissionsView: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, pageSize, searchTerm, statusFilter, levelFilter])
+  }, [currentPage, pageSize, searchTerm, statusFilter])
 
   useEffect(() => {
     loadKycSubmissions()
   }, [loadKycSubmissions])
 
   const handleSearch = (value: string) => {
-    setSearchTerm(value)
-    setCurrentPage(1) // Reset to first page when searching
+    setSearchInput(value) // Update input immediately for responsive UI
   }
 
   const handleStatusFilter = (value: string) => {
     setStatusFilter(value)
-    setCurrentPage(1) // Reset to first page when filtering
-  }
-
-  const handleLevelFilter = (value: string) => {
-    setLevelFilter(value)
     setCurrentPage(1) // Reset to first page when filtering
   }
 
@@ -204,7 +208,7 @@ const KycSubmissionsView: React.FC = () => {
     <div className="flex flex-col h-full">
       <PageHeader
         title="KYC Submissions"
-        description="Manage and review KYC submission requests"
+        description="Manage and review KYC submission requests. Sensitive data is hidden for privacy - click on any row to view full details."
       >
         <div className="flex gap-2">
           <RefreshButton onClick={loadKycSubmissions} />
@@ -215,10 +219,14 @@ const KycSubmissionsView: React.FC = () => {
         <div className="bg-card rounded-lg p-6 h-full flex flex-col">
           <div className="flex items-center gap-4 mb-6 flex-shrink-0">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              {loading && searchTerm ? (
+                <RefreshCw className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              )}
               <Input
-                placeholder="Search submissions..."
-                value={searchTerm}
+                placeholder="Search by name, email, ID number..."
+                value={searchInput}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="pl-9"
               />
@@ -237,7 +245,7 @@ const KycSubmissionsView: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-48">
+            {/* <div className="w-48">
               <Select value={levelFilter} onValueChange={handleLevelFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by level" />
@@ -249,7 +257,7 @@ const KycSubmissionsView: React.FC = () => {
                   <SelectItem value="3">Level 3</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </div> */}
             <div className="text-sm text-muted-foreground">
               {total} submission{total !== 1 ? 's' : ''} found
             </div>
@@ -263,8 +271,8 @@ const KycSubmissionsView: React.FC = () => {
                     <TableHead>User</TableHead>
                     <TableHead>Level</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Nationality</TableHead>
+                    <TableHead>Personal Info</TableHead>
+                    <TableHead>Country</TableHead>
                     <TableHead>ID Type</TableHead>
                     <TableHead>Submitted</TableHead>
                     <TableHead>Actions</TableHead>
@@ -294,7 +302,7 @@ const KycSubmissionsView: React.FC = () => {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">{submission.user.username}</span>
-                            <span className="text-sm text-muted-foreground">{submission.user.email}</span>
+                            <span className="text-sm text-muted-foreground">{cipherEmail(submission.user.email)}</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -305,12 +313,12 @@ const KycSubmissionsView: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="font-medium">{submission.firstName} {submission.lastName}</span>
-                            <span className="text-sm text-muted-foreground">{submission.idNumber}</span>
+                            <span className="font-medium">{obfuscateName(`${submission.firstName} ${submission.lastName}`)}</span>
+                            <span className="text-sm text-muted-foreground">{obfuscateText(submission.idNumber)}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {submission.nationality}
+                          {obfuscateText(submission.nationality)}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {submission.idType.toUpperCase()}
