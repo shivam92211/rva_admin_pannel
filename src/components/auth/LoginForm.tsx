@@ -19,6 +19,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const [captchaRequired, setCaptchaRequired] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const passwordTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { login, isLoading, error, clearError, requires2FA, clear2FAState } = useAuthStore();
 
   // Check if CAPTCHA is required on component mount
@@ -33,6 +34,28 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     };
     checkCaptchaRequired();
   }, []);
+
+  // Auto-hide password after 5 seconds
+  useEffect(() => {
+    if (showPassword) {
+      // Clear any existing timer
+      if (passwordTimerRef.current) {
+        clearTimeout(passwordTimerRef.current);
+      }
+
+      // Set new timer to hide password after 5 seconds
+      passwordTimerRef.current = setTimeout(() => {
+        setShowPassword(false);
+      }, 5000);
+    }
+
+    // Cleanup function to clear timer on unmount or when showPassword changes
+    return () => {
+      if (passwordTimerRef.current) {
+        clearTimeout(passwordTimerRef.current);
+      }
+    };
+  }, [showPassword]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,14 +168,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               />
               <button
                 type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center transition-opacity"
                 onClick={() => setShowPassword(!showPassword)}
                 disabled={isLoading}
+                title={showPassword ? "Hide password (auto-hides in 5s)" : "Show password"}
               >
                 {showPassword ? (
-                  <EyeOff className="h-5 w-5 text-slate-400 hover:text-slate-300" />
+                  <EyeOff className="h-5 w-5 text-slate-400 hover:text-slate-300 transition-colors" />
                 ) : (
-                  <Eye className="h-5 w-5 text-slate-400 hover:text-slate-300" />
+                  <Eye className="h-5 w-5 text-slate-400 hover:text-slate-300 transition-colors" />
                 )}
               </button>
             </div>

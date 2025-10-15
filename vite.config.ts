@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => {
       origin: process.env.VITE_API_BASE_URL,
       proxy: {
         '/api': {
-          target: 'http://localhost:12000',
+          target: 'http://localhost:2000',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, '')
         }
