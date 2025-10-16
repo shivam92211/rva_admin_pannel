@@ -42,9 +42,13 @@ import {
   cexAdminClient,
   TradingPairResponseDto
 } from '@/services/cexengineAdminApi'
+import { cexBotApi } from '@/services/cexbotApi'
 import RefreshButton from '@/components/common/RefreshButton'
+import { useSnackbarMsg } from '@/hooks/snackbar'
 
 const TradingPairsView: React.FC = () => {
+  const [, setSnackbarMsg] = useSnackbarMsg()
+  
   const [tradingPairs, setTradingPairs] = useState<TradingPairResponseDto[]>([])
   const [allTradingPairs, setAllTradingPairs] = useState<TradingPairResponseDto[]>([]) // For filters
   const [loading, setLoading] = useState(false)
@@ -63,6 +67,26 @@ const TradingPairsView: React.FC = () => {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [tradingPairToDelete, setTradingPairToDelete] = useState<TradingPairResponseDto | null>(null)
+  
+  // Bot control states
+  const [activeBotPairs, setActiveBotPairs] = useState<Set<string>>(new Set())
+  const [botLoading, setBotLoading] = useState<Set<string>>(new Set())
+  const [botConfirmOpen, setBotConfirmOpen] = useState(false)
+  const [botAction, setBotAction] = useState<{type: 'add' | 'remove', pair: TradingPairResponseDto} | null>(null)
+
+  // Market operation confirmation states
+  const [marketActionConfirmOpen, setMarketActionConfirmOpen] = useState(false)
+  const [marketAction, setMarketAction] = useState<{type: 'activate' | 'deactivate' | 'suspend', pair: TradingPairResponseDto} | null>(null)
+
+  const loadActiveBotPairs = React.useCallback(async () => {
+    try {
+      const response = await cexBotApi.getBotPairs()
+      setActiveBotPairs(new Set(response.pairs))
+    } catch (error: any) {
+      console.error('Failed to load bot pairs:', error)
+      setActiveBotPairs(new Set())
+    }
+  }, [])
 
   const loadTradingPairs = React.useCallback(async () => {
     setLoading(true)
@@ -114,7 +138,8 @@ const TradingPairsView: React.FC = () => {
 
   useEffect(() => {
     loadTradingPairs()
-  }, [loadTradingPairs])
+    loadActiveBotPairs()
+  }, [loadTradingPairs, loadActiveBotPairs])
 
   const handleSearch = (value: string) => {
     setSearchTerm(value)
@@ -152,8 +177,16 @@ const TradingPairsView: React.FC = () => {
       setLoading(true)
       await cexAdminClient.activateMarket(symbol)
       await loadTradingPairs()
+      setSnackbarMsg({ 
+        msg: `Market ${symbol} activated successfully`, 
+        type: 'success' 
+      })
     } catch (error: any) {
       console.error('Failed to activate market:', error)
+      setSnackbarMsg({ 
+        msg: `Failed to activate market ${symbol}: ${error.message || 'Unknown error'}`, 
+        type: 'error' 
+      })
     } finally {
       setLoading(false)
     }
@@ -164,8 +197,16 @@ const TradingPairsView: React.FC = () => {
       setLoading(true)
       await cexAdminClient.deactivateMarket(symbol)
       await loadTradingPairs()
+      setSnackbarMsg({ 
+        msg: `Market ${symbol} deactivated successfully`, 
+        type: 'success' 
+      })
     } catch (error: any) {
       console.error('Failed to deactivate market:', error)
+      setSnackbarMsg({ 
+        msg: `Failed to deactivate market ${symbol}: ${error.message || 'Unknown error'}`, 
+        type: 'error' 
+      })
     } finally {
       setLoading(false)
     }
@@ -176,8 +217,16 @@ const TradingPairsView: React.FC = () => {
       setLoading(true)
       await cexAdminClient.suspendMarket(symbol)
       await loadTradingPairs()
+      setSnackbarMsg({ 
+        msg: `Market ${symbol} suspended successfully`, 
+        type: 'success' 
+      })
     } catch (error: any) {
       console.error('Failed to suspend market:', error)
+      setSnackbarMsg({ 
+        msg: `Failed to suspend market ${symbol}: ${error.message || 'Unknown error'}`, 
+        type: 'error' 
+      })
     } finally {
       setLoading(false)
     }
@@ -188,10 +237,19 @@ const TradingPairsView: React.FC = () => {
       setLoading(true)
       await cexAdminClient.deleteTradingPair(symbol)
       await loadTradingPairs()
+      await loadActiveBotPairs() // Refresh bot pairs in case the deleted pair was active
       setDeleteConfirmOpen(false)
       setTradingPairToDelete(null)
+      setSnackbarMsg({ 
+        msg: `Trading pair ${symbol} deleted successfully`, 
+        type: 'success' 
+      })
     } catch (error: any) {
       console.error('Failed to delete trading pair:', error)
+      setSnackbarMsg({ 
+        msg: `Failed to delete trading pair ${symbol}: ${error.message || 'Unknown error'}`, 
+        type: 'error' 
+      })
     } finally {
       setLoading(false)
     }
@@ -200,6 +258,83 @@ const TradingPairsView: React.FC = () => {
   const openDeleteConfirm = (tradingPair: TradingPairResponseDto) => {
     setTradingPairToDelete(tradingPair)
     setDeleteConfirmOpen(true)
+  }
+
+  const handleMarketActionClick = (type: 'activate' | 'deactivate' | 'suspend', pair: TradingPairResponseDto) => {
+    setMarketAction({ type, pair })
+    setMarketActionConfirmOpen(true)
+  }
+
+  const confirmMarketAction = async () => {
+    if (!marketAction) return
+
+    const { type, pair } = marketAction
+    
+    try {
+      switch (type) {
+        case 'activate':
+          await handleActivateMarket(pair.symbol)
+          break
+        case 'deactivate':
+          await handleDeactivateMarket(pair.symbol)
+          break
+        case 'suspend':
+          await handleSuspendMarket(pair.symbol)
+          break
+      }
+    } finally {
+      setMarketActionConfirmOpen(false)
+      setMarketAction(null)
+    }
+  }
+
+  const handleBotToggleClick = (pair: TradingPairResponseDto) => {
+    const isActive = activeBotPairs.has(pair.symbol)
+    setBotAction({
+      type: isActive ? 'remove' : 'add',
+      pair: pair
+    })
+    setBotConfirmOpen(true)
+  }
+
+  const confirmBotAction = async () => {
+    if (!botAction) return
+
+    const { type, pair } = botAction
+    setBotLoading(prev => new Set(prev).add(pair.symbol))
+
+    try {
+      if (type === 'add') {
+        await cexBotApi.addBotPair(pair.symbol)
+        setSnackbarMsg({ 
+          msg: `Market bot enabled for ${pair.symbol}`, 
+          type: 'success' 
+        })
+      } else {
+        await cexBotApi.removeBotPair(pair.symbol)
+        setSnackbarMsg({ 
+          msg: `Market bot disabled for ${pair.symbol}`, 
+          type: 'success' 
+        })
+      }
+      
+      // Refresh bot pairs to update UI
+      await loadActiveBotPairs()
+    } catch (error: any) {
+      console.error(`Failed to ${type} bot pair:`, error)
+      setSnackbarMsg({ 
+        msg: `Failed to ${type === 'add' ? 'enable' : 'disable'} market bot for ${pair.symbol}: ${error.message || 'Unknown error'}`, 
+        type: 'error' 
+      })
+    } finally {
+      setBotLoading(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(pair.symbol)
+        return newSet
+      })
+      setBotConfirmOpen(false)
+      setBotAction(null)
+    }
   }
 
   const formatDate = (dateString: string | Date) => {
@@ -232,7 +367,10 @@ const TradingPairsView: React.FC = () => {
         description="Create and manage trading pairs for the exchange"
       >
         <div className="flex gap-2">
-          <RefreshButton onClick={loadTradingPairs} />
+          <RefreshButton onClick={() => {
+            loadTradingPairs()
+            loadActiveBotPairs()
+          }} />
           <Button onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
             New Trading Pair
@@ -351,12 +489,45 @@ const TradingPairsView: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                            {/* Market Bot Control - Most Prominent */}
+                            <Button
+                              variant={activeBotPairs.has(pair.symbol) ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handleBotToggleClick(pair)}
+                              disabled={botLoading.has(pair.symbol)}
+                              className={`h-8 px-3 font-medium ${
+                                activeBotPairs.has(pair.symbol) 
+                                  ? "bg-green-600 hover:bg-green-700 text-white border-green-600" 
+                                  : "border-green-200 text-green-600 hover:bg-green-100 hover:text-green-950 hover:border-green-300"
+                              }`}
+                              title={activeBotPairs.has(pair.symbol) ? "Disable Market Bot" : "Enable Market Bot"}
+                            >
+                              {botLoading.has(pair.symbol) ? (
+                                <RefreshCw className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <>
+                                  {activeBotPairs.has(pair.symbol) ? (
+                                    <>
+                                      <Square className="h-3 w-3 mr-1" />
+                                      OFF
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Play className="h-3 w-3 mr-1" />
+                                      ON
+                                    </>
+                                  )}
+                                </>
+                              )}
+                            </Button>
+                            
+                            {/* Market Status Controls */}
                             {pair.status === 'ACTIVE' ? (
                               <>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleSuspendMarket(pair.symbol)}
+                                  onClick={() => handleMarketActionClick('suspend', pair)}
                                   disabled={loading}
                                   className="h-8 w-8 p-0"
                                   title="Suspend"
@@ -366,7 +537,7 @@ const TradingPairsView: React.FC = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleDeactivateMarket(pair.symbol)}
+                                  onClick={() => handleMarketActionClick('deactivate', pair)}
                                   disabled={loading}
                                   className="h-8 w-8 p-0"
                                   title="Deactivate"
@@ -378,7 +549,7 @@ const TradingPairsView: React.FC = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleActivateMarket(pair.symbol)}
+                                onClick={() => handleMarketActionClick('activate', pair)}
                                 disabled={loading}
                                 className="h-8 w-8 p-0"
                                 title="Activate"
@@ -480,6 +651,11 @@ const TradingPairsView: React.FC = () => {
             onSuccess={() => {
               setShowForm(false)
               loadTradingPairs()
+              loadActiveBotPairs()
+              setSnackbarMsg({ 
+                msg: 'Trading pair created successfully', 
+                type: 'success' 
+              })
             }}
             onCancel={() => setShowForm(false)}
           />
@@ -514,6 +690,110 @@ const TradingPairsView: React.FC = () => {
               disabled={loading}
             >
               {loading ? 'Deleting...' : 'Delete'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bot Toggle Confirmation Dialog */}
+      <Dialog open={botConfirmOpen} onOpenChange={setBotConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {botAction?.type === 'add' ? 'Enable' : 'Disable'} Market Bot
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to{' '}
+              <span className="font-semibold">
+                {botAction?.type === 'add' ? 'enable' : 'disable'}
+              </span>{' '}
+              the market bot for trading pair{' '}
+              <span className="font-mono font-bold">{botAction?.pair.symbol}</span>?
+              {botAction?.type === 'add' && (
+                <>
+                  <br /><br />
+                  <span className="text-sm text-muted-foreground">
+                    This will start automated market making for this trading pair.
+                  </span>
+                </>
+              )}
+              {botAction?.type === 'remove' && (
+                <>
+                  <br /><br />
+                  <span className="text-sm text-muted-foreground">
+                    This will stop automated market making and cancel all active orders for this trading pair.
+                  </span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setBotConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant={botAction?.type === 'add' ? 'default' : 'destructive'}
+              onClick={confirmBotAction}
+              disabled={!!botAction && botLoading.has(botAction.pair.symbol)}
+            >
+              {botAction && botLoading.has(botAction.pair.symbol) ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {botAction.type === 'add' ? 'Enabling...' : 'Disabling...'}
+                </>
+              ) : (
+                botAction?.type === 'add' ? 'Enable Bot' : 'Disable Bot'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Market Action Confirmation Dialog */}
+      <Dialog open={marketActionConfirmOpen} onOpenChange={setMarketActionConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {marketAction?.type === 'activate' && 'Activate Market'}
+              {marketAction?.type === 'deactivate' && 'Deactivate Market'}
+              {marketAction?.type === 'suspend' && 'Suspend Market'}
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to{' '}
+              <span className="font-semibold">{marketAction?.type}</span>{' '}
+              the market for trading pair{' '}
+              <span className="font-mono font-bold">{marketAction?.pair.symbol}</span>?
+              <br /><br />
+              <span className="text-sm text-muted-foreground">
+                {marketAction?.type === 'activate' && 'This will make the trading pair available for trading.'}
+                {marketAction?.type === 'deactivate' && 'This will disable trading for this pair and cancel all active orders.'}
+                {marketAction?.type === 'suspend' && 'This will temporarily halt trading while keeping the pair configured.'}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setMarketActionConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant={marketAction?.type === 'activate' ? 'default' : 'destructive'}
+              onClick={confirmMarketAction}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {marketAction?.type === 'activate' && 'Activating...'}
+                  {marketAction?.type === 'deactivate' && 'Deactivating...'}
+                  {marketAction?.type === 'suspend' && 'Suspending...'}
+                </>
+              ) : (
+                <>
+                  {marketAction?.type === 'activate' && 'Activate Market'}
+                  {marketAction?.type === 'deactivate' && 'Deactivate Market'}
+                  {marketAction?.type === 'suspend' && 'Suspend Market'}
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>
