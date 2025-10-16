@@ -1,6 +1,20 @@
 import axios from 'axios';
+import { SetterOrUpdater } from 'recoil';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL!;
+
+// Global snackbar setter function
+let globalSnackbarSetter: SetterOrUpdater<{ msg: string, type?: "info" | "error" | "warn" | "success" } | null> | null = null;
+
+export const setGlobalSnackbarSetter = (setter: SetterOrUpdater<{ msg: string, type?: "info" | "error" | "warn" | "success" } | null>) => {
+  globalSnackbarSetter = setter;
+};
+
+export const showGlobalSnackbar = (msg: string, type: "info" | "error" | "warn" | "success" = "error") => {
+  if (globalSnackbarSetter) {
+    globalSnackbarSetter({ msg, type });
+  }
+};
 
 export interface LoginCredentials {
   email: string;
@@ -269,6 +283,27 @@ export class AuthService {
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
+
+        // Handle 429 Too Many Requests
+        if (error.response?.status === 429) {
+          const message = error.response?.data?.message || 'Too many requests. Please slow down and try again.';
+          showGlobalSnackbar(message, 'error');
+          return Promise.reject(error);
+        }
+
+        // Handle 500 Internal Server Error
+        if (error.response?.status === 500) {
+          const message = 'Internal server error. Please try again later.';
+          showGlobalSnackbar(message, 'error');
+          return Promise.reject(error);
+        }
+
+        // Handle 503 Service Unavailable
+        if (error.response?.status === 503) {
+          const message = 'Service temporarily unavailable. Please try again later.';
+          showGlobalSnackbar(message, 'error');
+          return Promise.reject(error);
+        }
 
         // If 401 error and not already retried
         if (error.response?.status === 401 && !originalRequest._retry) {

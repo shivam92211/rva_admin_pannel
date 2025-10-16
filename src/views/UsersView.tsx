@@ -17,13 +17,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, RefreshCw, ChevronLeft, ChevronRight, Power, PowerOff, Shield, ShieldCheck } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Search, RefreshCw, ChevronLeft, ChevronRight, Power, PowerOff, Shield, ShieldCheck, X } from 'lucide-react';
 import { userApi, type User, type PaginatedUsersResponse } from '@/services/userApi';
 import { UserDetailsDialog } from '@/components/UserDetailsDialog';
 import RefreshButton from '@/components/common/RefreshButton';
 import { cipherEmail, maskString } from '@/utils/security';
+import { useSnackbarMsg } from '@/hooks/snackbar';
 
 const UsersView: React.FC = () => {
+  const [, setSnackbarMsg] = useSnackbarMsg();
+
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,7 +47,10 @@ const UsersView: React.FC = () => {
   // User details dialog state
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [loadingUserDetails, setLoadingUserDetails] = useState(false);
+
+  // User action confirmation states
+  const [userActionConfirmOpen, setUserActionConfirmOpen] = useState(false);
+  const [userAction, setUserAction] = useState<{ type: 'activate' | 'deactivate' | 'whitelist' | 'removeWhitelist', user: User; } | null>(null);
 
 
   const loadUsers = React.useCallback(async () => {
@@ -83,6 +96,19 @@ const UsersView: React.FC = () => {
     setCurrentPage(1); // Reset to first page when filtering
   };
 
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setWhitelistFilter('all');
+    setCurrentPage(1);
+    setSnackbarMsg({ 
+      msg: 'All filters cleared', 
+      type: 'success' 
+    });
+  };
+
+  const hasActiveFilters = searchTerm !== '' || statusFilter !== 'all' || whitelistFilter !== 'all';
+
   const handleToggleUserStatus = async (userId: string) => {
     try {
       setLoading(true);
@@ -97,11 +123,17 @@ const UsersView: React.FC = () => {
         )
       );
 
-      // Optionally show a success message or toast
-      console.log(result.message);
+      const user = users.find(u => u.id === userId);
+      setSnackbarMsg({
+        msg: `User ${user?.username || 'user'} ${result.isActive ? 'activated' : 'deactivated'} successfully`,
+        type: 'success'
+      });
     } catch (error: any) {
       console.error('Failed to toggle user status:', error);
-      // Optionally show error message
+      setSnackbarMsg({
+        msg: `Failed to toggle user status: ${error.message || 'Unknown error'}`,
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -121,13 +153,46 @@ const UsersView: React.FC = () => {
         )
       );
 
-      // Optionally show a success message or toast
-      console.log(result.message);
+      const user = users.find(u => u.id === userId);
+      setSnackbarMsg({
+        msg: `User ${user?.username || 'user'} ${result.withdrawalWhitelist ? 'added to' : 'removed from'} withdrawal whitelist successfully`,
+        type: 'success'
+      });
     } catch (error: any) {
       console.error('Failed to toggle withdrawal whitelist:', error);
-      // Optionally show error message
+      setSnackbarMsg({
+        msg: `Failed to toggle withdrawal whitelist: ${error.message || 'Unknown error'}`,
+        type: 'error'
+      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUserActionClick = (type: 'activate' | 'deactivate' | 'whitelist' | 'removeWhitelist', user: User) => {
+    setUserAction({ type, user });
+    setUserActionConfirmOpen(true);
+  };
+
+  const confirmUserAction = async () => {
+    if (!userAction) return;
+
+    const { type, user } = userAction;
+
+    try {
+      switch (type) {
+        case 'activate':
+        case 'deactivate':
+          await handleToggleUserStatus(user.id);
+          break;
+        case 'whitelist':
+        case 'removeWhitelist':
+          await handleToggleWithdrawalWhitelist(user.id);
+          break;
+      }
+    } finally {
+      setUserActionConfirmOpen(false);
+      setUserAction(null);
     }
   };
 
@@ -139,7 +204,6 @@ const UsersView: React.FC = () => {
 
   const handleUserRowClick = async (user: User) => {
     try {
-      setLoadingUserDetails(true);
       setDialogOpen(true);
 
       // Fetch detailed user data
@@ -149,8 +213,6 @@ const UsersView: React.FC = () => {
       console.error('Failed to load user details:', error);
       // Show basic user data if detailed fetch fails
       setSelectedUser(user);
-    } finally {
-      setLoadingUserDetails(false);
     }
   };
 
@@ -183,7 +245,19 @@ const UsersView: React.FC = () => {
         description="Manage system users and their information"
       >
         <div className="flex gap-2">
-          <RefreshButton onClick={loadUsers} />
+          <RefreshButton onClick={() => {
+            loadUsers().then(() => {
+              setSnackbarMsg({
+                msg: 'Users refreshed successfully',
+                type: 'success'
+              });
+            }).catch(() => {
+              setSnackbarMsg({
+                msg: 'Failed to refresh users',
+                type: 'error'
+              });
+            });
+          }} />
         </div>
       </PageHeader>
 
@@ -223,6 +297,16 @@ const UsersView: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+            <Button
+              variant="outline"
+              onClick={clearAllFilters}
+              disabled={!hasActiveFilters}
+              className="flex items-center gap-2 shrink-0"
+              title="Clear all filters"
+            >
+              <X className="h-4 w-4" />
+              Clear
+            </Button>
             <div className="text-sm text-muted-foreground">
               {total} user{total !== 1 ? 's' : ''} found
             </div>
@@ -289,7 +373,10 @@ const UsersView: React.FC = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleToggleUserStatus(user.id)}
+                              onClick={() => handleUserActionClick(
+                                user.isActive ? 'deactivate' : 'activate',
+                                user
+                              )}
                               disabled={loading}
                               className={`flex items-center gap-2 ${user.isActive
                                 ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
@@ -311,7 +398,10 @@ const UsersView: React.FC = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleToggleWithdrawalWhitelist(user.id)}
+                              onClick={() => handleUserActionClick(
+                                user.withdrawalWhitelist ? 'removeWhitelist' : 'whitelist',
+                                user
+                              )}
                               disabled={loading}
                               className={`flex items-center gap-2 ${user.withdrawalWhitelist
                                 ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
@@ -406,6 +496,65 @@ const UsersView: React.FC = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
       />
+
+      {/* User Action Confirmation Dialog */}
+      <Dialog open={userActionConfirmOpen} onOpenChange={setUserActionConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {userAction?.type === 'activate' && 'Activate User'}
+              {userAction?.type === 'deactivate' && 'Deactivate User'}
+              {userAction?.type === 'whitelist' && 'Add to Withdrawal Whitelist'}
+              {userAction?.type === 'removeWhitelist' && 'Remove from Withdrawal Whitelist'}
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to{' '}
+              <span className="font-semibold">
+                {userAction?.type === 'activate' && 'activate'}
+                {userAction?.type === 'deactivate' && 'deactivate'}
+                {userAction?.type === 'whitelist' && 'add to withdrawal whitelist'}
+                {userAction?.type === 'removeWhitelist' && 'remove from withdrawal whitelist'}
+              </span>{' '}
+              user{' '}
+              <span className="font-mono font-bold">{userAction?.user.username}</span>?
+              <br /><br />
+              <span className="text-sm text-muted-foreground">
+                {userAction?.type === 'activate' && 'This will allow the user to access their account and perform operations.'}
+                {userAction?.type === 'deactivate' && 'This will prevent the user from accessing their account.'}
+                {userAction?.type === 'whitelist' && 'This will allow the user to withdraw funds without additional verification.'}
+                {userAction?.type === 'removeWhitelist' && 'This will require additional verification for withdrawals.'}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setUserActionConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant={userAction?.type === 'activate' || userAction?.type === 'whitelist' ? 'default' : 'destructive'}
+              onClick={confirmUserAction}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {userAction?.type === 'activate' && 'Activating...'}
+                  {userAction?.type === 'deactivate' && 'Deactivating...'}
+                  {userAction?.type === 'whitelist' && 'Adding...'}
+                  {userAction?.type === 'removeWhitelist' && 'Removing...'}
+                </>
+              ) : (
+                <>
+                  {userAction?.type === 'activate' && 'Activate User'}
+                  {userAction?.type === 'deactivate' && 'Deactivate User'}
+                  {userAction?.type === 'whitelist' && 'Add to Whitelist'}
+                  {userAction?.type === 'removeWhitelist' && 'Remove from Whitelist'}
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
