@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react'
-import { PageHeader } from '@/components/PageHeader'
-import { TradingPairForm } from '@/components/tradingpair/TradingPairForm'
-import { TradingPairDetailsDialog } from '@/components/tradingpair/TradingPairDetailsDialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import React, { useState, useEffect } from 'react';
+import { PageHeader } from '@/components/PageHeader';
+import { TradingPairForm } from '@/components/tradingpair/TradingPairForm';
+import { TradingPairDetailsDialog } from '@/components/tradingpair/TradingPairDetailsDialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -18,347 +18,346 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
-import { 
-  Search, 
-  RefreshCw, 
-  ChevronLeft, 
-  ChevronRight, 
+} from '@/components/ui/dialog';
+import {
+  Search,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
   Plus,
   Play,
   Pause,
   Square,
   Trash2,
   TrendingUp
-} from 'lucide-react'
-import { 
+} from 'lucide-react';
+import {
   cexAdminClient,
   TradingPairResponseDto
-} from '@/services/cexengineAdminApi'
-import { cexBotApi } from '@/services/cexbotApi'
-import RefreshButton from '@/components/common/RefreshButton'
-import { useSnackbarMsg } from '@/hooks/snackbar'
+} from '@/services/cexengineAdminApi';
+import { cexBotApi } from '@/services/cexbotApi';
+import RefreshButton from '@/components/common/RefreshButton';
+import { useSnackbarMsg } from '@/hooks/snackbar';
 
 const TradingPairsView: React.FC = () => {
-  const [, setSnackbarMsg] = useSnackbarMsg()
-  
-  const [tradingPairs, setTradingPairs] = useState<TradingPairResponseDto[]>([])
-  const [allTradingPairs, setAllTradingPairs] = useState<TradingPairResponseDto[]>([]) // For filters
-  const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [baseAssetFilter, setBaseAssetFilter] = useState<string>('all')
-  const [quoteAssetFilter, setQuoteAssetFilter] = useState<string>('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [total, setTotal] = useState(0)
-  const pageSize = 10
+  const [, setSnackbarMsg] = useSnackbarMsg();
+
+  const [tradingPairs, setTradingPairs] = useState<TradingPairResponseDto[]>([]);
+  const [allTradingPairs, setAllTradingPairs] = useState<TradingPairResponseDto[]>([]); // For filters
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [baseAssetFilter, setBaseAssetFilter] = useState<string>('all');
+  const [quoteAssetFilter, setQuoteAssetFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 10;
 
   // Dialog states
-  const [showForm, setShowForm] = useState(false)
-  const [selectedTradingPair, setSelectedTradingPair] = useState<TradingPairResponseDto | null>(null)
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-  const [tradingPairToDelete, setTradingPairToDelete] = useState<TradingPairResponseDto | null>(null)
-  
+  const [showForm, setShowForm] = useState(false);
+  const [selectedTradingPair, setSelectedTradingPair] = useState<TradingPairResponseDto | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [tradingPairToDelete, setTradingPairToDelete] = useState<TradingPairResponseDto | null>(null);
+
   // Bot control states
-  const [activeBotPairs, setActiveBotPairs] = useState<Set<string>>(new Set())
-  const [botLoading, setBotLoading] = useState<Set<string>>(new Set())
-  const [botConfirmOpen, setBotConfirmOpen] = useState(false)
-  const [botAction, setBotAction] = useState<{type: 'add' | 'remove', pair: TradingPairResponseDto} | null>(null)
+  const [activeBotPairs, setActiveBotPairs] = useState<Set<string>>(new Set());
+  const [botLoading, setBotLoading] = useState<Set<string>>(new Set());
+  const [botConfirmOpen, setBotConfirmOpen] = useState(false);
+  const [botAction, setBotAction] = useState<{ type: 'add' | 'remove', pair: TradingPairResponseDto; } | null>(null);
 
   // Market operation confirmation states
-  const [marketActionConfirmOpen, setMarketActionConfirmOpen] = useState(false)
-  const [marketAction, setMarketAction] = useState<{type: 'activate' | 'deactivate' | 'suspend', pair: TradingPairResponseDto} | null>(null)
+  const [marketActionConfirmOpen, setMarketActionConfirmOpen] = useState(false);
+  const [marketAction, setMarketAction] = useState<{ type: 'activate' | 'deactivate' | 'suspend', pair: TradingPairResponseDto; } | null>(null);
 
   const loadActiveBotPairs = React.useCallback(async () => {
     try {
-      const response = await cexBotApi.getBotPairs()
-      setActiveBotPairs(new Set(response.pairs))
+      const response = await cexBotApi.getBotPairs();
+      setActiveBotPairs(new Set(response.pairs));
     } catch (error: any) {
-      console.error('Failed to load bot pairs:', error)
-      setActiveBotPairs(new Set())
+      console.error('Failed to load bot pairs:', error);
+      setActiveBotPairs(new Set());
     }
-  }, [])
+  }, []);
 
   const loadTradingPairs = React.useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const response = await cexAdminClient.getTradingPairs()
-      setAllTradingPairs(response) // Store all pairs for filter options
-      
+      const response = await cexAdminClient.getTradingPairs();
+      setAllTradingPairs(response); // Store all pairs for filter options
+
       // Apply client-side filtering
-      let filteredPairs = response
+      let filteredPairs = response;
 
       if (searchTerm) {
-        filteredPairs = filteredPairs.filter(pair => 
+        filteredPairs = filteredPairs.filter(pair =>
           pair.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
           pair.baseAsset.toLowerCase().includes(searchTerm.toLowerCase()) ||
           pair.quoteAsset.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+        );
       }
 
       if (statusFilter !== 'all') {
-        filteredPairs = filteredPairs.filter(pair => pair.status === statusFilter)
+        filteredPairs = filteredPairs.filter(pair => pair.status === statusFilter);
       }
 
       if (baseAssetFilter !== 'all') {
-        filteredPairs = filteredPairs.filter(pair => pair.baseAsset === baseAssetFilter)
+        filteredPairs = filteredPairs.filter(pair => pair.baseAsset === baseAssetFilter);
       }
 
       if (quoteAssetFilter !== 'all') {
-        filteredPairs = filteredPairs.filter(pair => pair.quoteAsset === quoteAssetFilter)
+        filteredPairs = filteredPairs.filter(pair => pair.quoteAsset === quoteAssetFilter);
       }
 
       // Client-side pagination
-      const startIndex = (currentPage - 1) * pageSize
-      const endIndex = startIndex + pageSize
-      const paginatedPairs = filteredPairs.slice(startIndex, endIndex)
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedPairs = filteredPairs.slice(startIndex, endIndex);
 
-      setTradingPairs(paginatedPairs)
-      setTotal(filteredPairs.length)
-      setTotalPages(Math.ceil(filteredPairs.length / pageSize))
+      setTradingPairs(paginatedPairs);
+      setTotal(filteredPairs.length);
+      setTotalPages(Math.ceil(filteredPairs.length / pageSize));
     } catch (error: any) {
-      console.error('Failed to load trading pairs:', error)
-      setTradingPairs([])
-      setAllTradingPairs([])
-      setTotalPages(1)
-      setTotal(0)
+      console.error('Failed to load trading pairs:', error);
+      setTradingPairs([]);
+      setAllTradingPairs([]);
+      setTotalPages(1);
+      setTotal(0);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [currentPage, pageSize, searchTerm, statusFilter, baseAssetFilter, quoteAssetFilter])
+  }, [currentPage, pageSize, searchTerm, statusFilter, baseAssetFilter, quoteAssetFilter]);
 
   useEffect(() => {
-    loadTradingPairs()
-    loadActiveBotPairs()
-  }, [loadTradingPairs, loadActiveBotPairs])
+    loadTradingPairs();
+    loadActiveBotPairs();
+  }, [loadTradingPairs, loadActiveBotPairs]);
 
   const handleSearch = (value: string) => {
-    setSearchTerm(value)
-    setCurrentPage(1)
-  }
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
 
   const handleStatusFilter = (value: string) => {
-    setStatusFilter(value)
-    setCurrentPage(1)
-  }
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
 
   const handleBaseAssetFilter = (value: string) => {
-    setBaseAssetFilter(value)
-    setCurrentPage(1)
-  }
+    setBaseAssetFilter(value);
+    setCurrentPage(1);
+  };
 
   const handleQuoteAssetFilter = (value: string) => {
-    setQuoteAssetFilter(value)
-    setCurrentPage(1)
-  }
+    setQuoteAssetFilter(value);
+    setCurrentPage(1);
+  };
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page)
+      setCurrentPage(page);
     }
-  }
+  };
 
   const handleTradingPairRowClick = (tradingPair: TradingPairResponseDto) => {
-    setSelectedTradingPair(tradingPair)
-    setDetailsDialogOpen(true)
-  }
+    setSelectedTradingPair(tradingPair);
+    setDetailsDialogOpen(true);
+  };
 
   const handleActivateMarket = async (symbol: string) => {
     try {
-      setLoading(true)
-      await cexAdminClient.activateMarket(symbol)
-      await loadTradingPairs()
-      setSnackbarMsg({ 
-        msg: `Market ${symbol} activated successfully`, 
-        type: 'success' 
-      })
+      setLoading(true);
+      await cexAdminClient.activateMarket(symbol);
+      await loadTradingPairs();
+      setSnackbarMsg({
+        msg: `Market ${symbol} activated successfully`,
+        type: 'success'
+      });
     } catch (error: any) {
-      console.error('Failed to activate market:', error)
-      setSnackbarMsg({ 
-        msg: `Failed to activate market ${symbol}: ${error.message || 'Unknown error'}`, 
-        type: 'error' 
-      })
+      console.error('Failed to activate market:', error);
+      setSnackbarMsg({
+        msg: `Failed to activate market ${symbol}: ${error.message || 'Unknown error'}`,
+        type: 'error'
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDeactivateMarket = async (symbol: string) => {
     try {
-      setLoading(true)
-      await cexAdminClient.deactivateMarket(symbol)
-      await loadTradingPairs()
-      setSnackbarMsg({ 
-        msg: `Market ${symbol} deactivated successfully`, 
-        type: 'success' 
-      })
+      setLoading(true);
+      await cexAdminClient.deactivateMarket(symbol);
+      await loadTradingPairs();
+      setSnackbarMsg({
+        msg: `Market ${symbol} deactivated successfully`,
+        type: 'success'
+      });
     } catch (error: any) {
-      console.error('Failed to deactivate market:', error)
-      setSnackbarMsg({ 
-        msg: `Failed to deactivate market ${symbol}: ${error.message || 'Unknown error'}`, 
-        type: 'error' 
-      })
+      console.error('Failed to deactivate market:', error);
+      setSnackbarMsg({
+        msg: `Failed to deactivate market ${symbol}: ${error.message || 'Unknown error'}`,
+        type: 'error'
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSuspendMarket = async (symbol: string) => {
     try {
-      setLoading(true)
-      await cexAdminClient.suspendMarket(symbol)
-      await loadTradingPairs()
-      setSnackbarMsg({ 
-        msg: `Market ${symbol} suspended successfully`, 
-        type: 'success' 
-      })
+      setLoading(true);
+      await cexAdminClient.suspendMarket(symbol);
+      await loadTradingPairs();
+      setSnackbarMsg({
+        msg: `Market ${symbol} suspended successfully`,
+        type: 'success'
+      });
     } catch (error: any) {
-      console.error('Failed to suspend market:', error)
-      setSnackbarMsg({ 
-        msg: `Failed to suspend market ${symbol}: ${error.message || 'Unknown error'}`, 
-        type: 'error' 
-      })
+      console.error('Failed to suspend market:', error);
+      setSnackbarMsg({
+        msg: `Failed to suspend market ${symbol}: ${error.message || 'Unknown error'}`,
+        type: 'error'
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDeleteTradingPair = async (symbol: string) => {
     try {
-      setLoading(true)
-      await cexAdminClient.deleteTradingPair(symbol)
-      await loadTradingPairs()
-      await loadActiveBotPairs() // Refresh bot pairs in case the deleted pair was active
-      setDeleteConfirmOpen(false)
-      setTradingPairToDelete(null)
-      setSnackbarMsg({ 
-        msg: `Trading pair ${symbol} deleted successfully`, 
-        type: 'success' 
-      })
+      setLoading(true);
+      await cexAdminClient.deleteTradingPair(symbol);
+      await loadTradingPairs();
+      await loadActiveBotPairs(); // Refresh bot pairs in case the deleted pair was active
+      setDeleteConfirmOpen(false);
+      setTradingPairToDelete(null);
+      setSnackbarMsg({
+        msg: `Trading pair ${symbol} deleted successfully`,
+        type: 'success'
+      });
     } catch (error: any) {
-      console.error('Failed to delete trading pair:', error)
-      setSnackbarMsg({ 
-        msg: `Failed to delete trading pair ${symbol}: ${error.message || 'Unknown error'}`, 
-        type: 'error' 
-      })
+      console.error('Failed to delete trading pair:', error);
+      setSnackbarMsg({
+        msg: `Failed to delete trading pair ${symbol}: ${error.message || 'Unknown error'}`,
+        type: 'error'
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const openDeleteConfirm = (tradingPair: TradingPairResponseDto) => {
-    setTradingPairToDelete(tradingPair)
-    setDeleteConfirmOpen(true)
-  }
+    setTradingPairToDelete(tradingPair);
+    setDeleteConfirmOpen(true);
+  };
 
   const handleMarketActionClick = (type: 'activate' | 'deactivate' | 'suspend', pair: TradingPairResponseDto) => {
-    setMarketAction({ type, pair })
-    setMarketActionConfirmOpen(true)
-  }
+    setMarketAction({ type, pair });
+    setMarketActionConfirmOpen(true);
+  };
 
   const confirmMarketAction = async () => {
-    if (!marketAction) return
+    if (!marketAction) return;
 
-    const { type, pair } = marketAction
-    
+    const { type, pair } = marketAction;
+
     try {
       switch (type) {
         case 'activate':
-          await handleActivateMarket(pair.symbol)
-          break
+          await handleActivateMarket(pair.symbol);
+          break;
         case 'deactivate':
-          await handleDeactivateMarket(pair.symbol)
-          break
+          await handleDeactivateMarket(pair.symbol);
+          break;
         case 'suspend':
-          await handleSuspendMarket(pair.symbol)
-          break
+          await handleSuspendMarket(pair.symbol);
+          break;
       }
     } finally {
-      setMarketActionConfirmOpen(false)
-      setMarketAction(null)
+      setMarketActionConfirmOpen(false);
+      setMarketAction(null);
     }
-  }
+  };
 
   const handleBotToggleClick = (pair: TradingPairResponseDto) => {
-    const isActive = activeBotPairs.has(pair.symbol)
+    const isActive = activeBotPairs.has(pair.symbol);
     setBotAction({
       type: isActive ? 'remove' : 'add',
       pair: pair
-    })
-    setBotConfirmOpen(true)
-  }
+    });
+    setBotConfirmOpen(true);
+  };
 
   const confirmBotAction = async () => {
-    if (!botAction) return
+    if (!botAction) return;
 
-    const { type, pair } = botAction
-    setBotLoading(prev => new Set(prev).add(pair.symbol))
+    const { type, pair } = botAction;
+    setBotLoading(prev => new Set(prev).add(pair.symbol));
 
     try {
       if (type === 'add') {
-        await cexBotApi.addBotPair(pair.symbol)
-        setSnackbarMsg({ 
-          msg: `Market bot enabled for ${pair.symbol}`, 
-          type: 'success' 
-        })
+        await cexBotApi.addBotPair(pair.symbol);
+        setSnackbarMsg({
+          msg: `Market bot enabled for ${pair.symbol}`,
+          type: 'success'
+        });
       } else {
-        await cexBotApi.removeBotPair(pair.symbol)
-        setSnackbarMsg({ 
-          msg: `Market bot disabled for ${pair.symbol}`, 
-          type: 'success' 
-        })
+        await cexBotApi.removeBotPair(pair.symbol);
+        setSnackbarMsg({
+          msg: `Market bot disabled for ${pair.symbol}`,
+          type: 'success'
+        });
       }
-      
+
       // Refresh bot pairs to update UI
-      await loadActiveBotPairs()
+      await loadActiveBotPairs();
     } catch (error: any) {
-      console.error(`Failed to ${type} bot pair:`, error)
-      setSnackbarMsg({ 
-        msg: `Failed to ${type === 'add' ? 'enable' : 'disable'} market bot for ${pair.symbol}: ${error.message || 'Unknown error'}`, 
-        type: 'error' 
-      })
+      console.error(`Failed to ${type} bot pair:`, error);
+      setSnackbarMsg({
+        msg: `Failed to ${type === 'add' ? 'enable' : 'disable'} market bot for ${pair.symbol}: ${error.message || 'Unknown error'}`,
+        type: 'error'
+      });
     } finally {
       setBotLoading(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(pair.symbol)
-        return newSet
-      })
-      setBotConfirmOpen(false)
-      setBotAction(null)
+        const newSet = new Set(prev);
+        newSet.delete(pair.symbol);
+        return newSet;
+      });
+      setBotConfirmOpen(false);
+      setBotAction(null);
     }
-  }
+  };
 
   const formatDate = (dateString: string | Date) => {
-    return new Date(dateString).toLocaleDateString()
-  }
+    return new Date(dateString).toLocaleDateString();
+  };
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
       ACTIVE: 'bg-green-100 text-green-800',
       INACTIVE: 'bg-gray-100 text-gray-800',
       SUSPENDED: 'bg-yellow-100 text-yellow-800',
-    }
+    };
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'
-      }`}>
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'
+        }`}>
         {status}
       </span>
-    )
-  }
+    );
+  };
 
   // Get unique assets for filters
-  const uniqueBaseAssets = [...new Set(allTradingPairs.map(pair => pair.baseAsset))].sort()
-  const uniqueQuoteAssets = [...new Set(allTradingPairs.map(pair => pair.quoteAsset))].sort()
+  const uniqueBaseAssets = [...new Set(allTradingPairs.map(pair => pair.baseAsset))].sort();
+  const uniqueQuoteAssets = [...new Set(allTradingPairs.map(pair => pair.quoteAsset))].sort();
 
   return (
     <div className="flex flex-col h-full">
@@ -368,8 +367,8 @@ const TradingPairsView: React.FC = () => {
       >
         <div className="flex gap-2">
           <RefreshButton onClick={() => {
-            loadTradingPairs()
-            loadActiveBotPairs()
+            loadTradingPairs();
+            loadActiveBotPairs();
           }} />
           <Button onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -495,11 +494,10 @@ const TradingPairsView: React.FC = () => {
                               size="sm"
                               onClick={() => handleBotToggleClick(pair)}
                               disabled={botLoading.has(pair.symbol)}
-                              className={`h-8 px-3 font-medium ${
-                                activeBotPairs.has(pair.symbol) 
-                                  ? "bg-green-600 hover:bg-green-700 text-white border-green-600" 
+                              className={`h-8 px-3 font-medium ${activeBotPairs.has(pair.symbol)
+                                  ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
                                   : "border-green-200 text-green-600 hover:bg-green-100 hover:text-green-950 hover:border-green-300"
-                              }`}
+                                }`}
                               title={activeBotPairs.has(pair.symbol) ? "Disable Market Bot" : "Enable Market Bot"}
                             >
                               {botLoading.has(pair.symbol) ? (
@@ -520,7 +518,7 @@ const TradingPairsView: React.FC = () => {
                                 </>
                               )}
                             </Button>
-                            
+
                             {/* Market Status Controls */}
                             {pair.status === 'ACTIVE' ? (
                               <>
@@ -597,12 +595,12 @@ const TradingPairsView: React.FC = () => {
                 {/* Page numbers */}
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter(page => {
-                    if (page === 1 || page === totalPages) return true
-                    if (Math.abs(page - currentPage) <= 1) return true
-                    return false
+                    if (page === 1 || page === totalPages) return true;
+                    if (Math.abs(page - currentPage) <= 1) return true;
+                    return false;
                   })
                   .map((page, index, pages) => {
-                    const showEllipsis = index > 0 && page - pages[index - 1] > 1
+                    const showEllipsis = index > 0 && page - pages[index - 1] > 1;
 
                     return (
                       <React.Fragment key={page}>
@@ -617,7 +615,7 @@ const TradingPairsView: React.FC = () => {
                           {page}
                         </Button>
                       </React.Fragment>
-                    )
+                    );
                   })}
 
                 <Button
@@ -647,15 +645,15 @@ const TradingPairsView: React.FC = () => {
               Fill in the details below to create a new trading pair
             </DialogDescription>
           </DialogHeader>
-          <TradingPairForm 
+          <TradingPairForm
             onSuccess={() => {
-              setShowForm(false)
-              loadTradingPairs()
-              loadActiveBotPairs()
-              setSnackbarMsg({ 
-                msg: 'Trading pair created successfully', 
-                type: 'success' 
-              })
+              setShowForm(false);
+              loadTradingPairs();
+              loadActiveBotPairs();
+              setSnackbarMsg({
+                msg: 'Trading pair created successfully',
+                type: 'success'
+              });
             }}
             onCancel={() => setShowForm(false)}
           />
@@ -799,7 +797,7 @@ const TradingPairsView: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};
 
-export default TradingPairsView
+export default TradingPairsView;
