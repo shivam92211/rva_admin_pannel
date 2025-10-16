@@ -5,8 +5,10 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Search, RefreshCw, Eye, ExternalLink } from 'lucide-react'
+import { Search, RefreshCw, Eye, EyeOff, ExternalLink } from 'lucide-react'
 import { format } from 'date-fns'
+import CopyButton from '../common/CopyButton'
+import { cipherEmail, obfuscateText, maskString } from '@/utils/security'
 
 export const KucoinWithdrawalHistoryTable: React.FC = () => {
   const {
@@ -20,6 +22,24 @@ export const KucoinWithdrawalHistoryTable: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [showSensitiveData, setShowSensitiveData] = useState(false)
+
+  // Display helper functions for GDPR compliance
+  const displayEmail = (email: string | undefined | null) => {
+    return showSensitiveData ? (email || 'N/A') : cipherEmail(email || undefined);
+  };
+
+  const displayAddress = (address: string | undefined | null) => {
+    return showSensitiveData ? (address || 'N/A') : maskString(address || undefined, 6, 6);
+  };
+
+  const displayTxId = (txId: string | undefined | null) => {
+    return showSensitiveData ? (txId || 'N/A') : maskString(txId || undefined, 6, 6);
+  };
+
+  const displayText = (text: string | undefined | null) => {
+    return showSensitiveData ? (text || 'N/A') : obfuscateText(text || undefined);
+  };
 
   // Filter withdrawals based on search and filters
   const filteredWithdrawals = kucoinWithdrawals.filter(withdrawal => {
@@ -91,7 +111,7 @@ export const KucoinWithdrawalHistoryTable: React.FC = () => {
         <div className="relative col-span-2">
           <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <Input
-            placeholder="Search by ID, address, hash, user email..."
+            placeholder="Search by ID, address, hash, user email... (sensitive data hidden in table)"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
@@ -162,11 +182,11 @@ export const KucoinWithdrawalHistoryTable: React.FC = () => {
                   <td className="py-3 px-4">
                     <div className="text-sm">
                       <div className="text-white font-medium">
-                        {withdrawal.user?.email || 'N/A'}
+                        {displayEmail(withdrawal.user?.email)}
                       </div>
                       {withdrawal.user?.username && (
                         <div className="text-xs text-gray-400">
-                          @{withdrawal.user.username}
+                          @{displayText(withdrawal.user.username)}
                         </div>
                       )}
                     </div>
@@ -217,20 +237,47 @@ export const KucoinWithdrawalHistoryTable: React.FC = () => {
 
       {/* Withdrawal Detail Modal */}
       <Dialog open={!!selectedKucoinWithdrawal} onOpenChange={() => clearSelectedKucoinWithdrawal()}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>KuCoin Withdrawal Details</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>KuCoin Withdrawal Details</DialogTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSensitiveData(!showSensitiveData)}
+                  className="flex items-center gap-2"
+                >
+                  {showSensitiveData ? (
+                    <>
+                      <EyeOff className="h-4 w-4" />
+                      Hide Data
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4" />
+                      Show Data
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+            {!showSensitiveData && (
+              <p className={`text-sm text-amber-600 mt-2`}>
+                🔒 Sensitive data is hidden for privacy. Click "Show Data" to view full details.
+              </p>
+            )}
           </DialogHeader>
           {selectedKucoinWithdrawal && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-400">Withdrawal ID</label>
-                  <p className="font-mono text-sm">{selectedKucoinWithdrawal.id}</p>
+                  <p className="font-mono text-sm break-all">{displayText(selectedKucoinWithdrawal.id)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-400">User Email</label>
-                  <p className="text-sm">{selectedKucoinWithdrawal.user?.email || 'N/A'}</p>
+                  <p className="text-sm">{displayEmail(selectedKucoinWithdrawal.user?.email)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-400">Amount</label>
@@ -268,18 +315,22 @@ export const KucoinWithdrawalHistoryTable: React.FC = () => {
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm font-medium text-gray-400">Destination Address</label>
-                  <p className="font-mono text-sm break-all">{selectedKucoinWithdrawal.address}</p>
+                  <p className="font-mono text-sm break-all">{displayAddress(selectedKucoinWithdrawal.address)}
+                    <CopyButton text={selectedKucoinWithdrawal.address || ''} />
+                  </p>
                 </div>
                 {selectedKucoinWithdrawal.memo && (
                   <div className="col-span-2">
                     <label className="text-sm font-medium text-gray-400">Memo</label>
-                    <p className="font-mono text-sm">{selectedKucoinWithdrawal.memo}</p>
+                    <p className="font-mono text-sm">{displayText(selectedKucoinWithdrawal.memo)}</p>
                   </div>
                 )}
                 {selectedKucoinWithdrawal.walletTxId && (
                   <div className="col-span-2">
                     <label className="text-sm font-medium text-gray-400">Transaction Hash</label>
-                    <p className="font-mono text-sm break-all">{selectedKucoinWithdrawal.walletTxId}</p>
+                    <p className="font-mono text-sm break-all">{displayTxId(selectedKucoinWithdrawal.walletTxId)}
+                      <CopyButton text={selectedKucoinWithdrawal.walletTxId || ''} />
+                    </p>
                   </div>
                 )}
                 <div>
