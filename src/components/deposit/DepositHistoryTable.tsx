@@ -305,7 +305,7 @@ export const DepositHistoryTable: React.FC = () => {
               </div>
             </div>
             {!showSensitiveData && (
-              <p className="text-sm text-muted-foreground mt-2">
+              <p className={`text-sm text-amber-600 mt-2`}>
                 🔒 Sensitive data is hidden for privacy. Click "Show Data" to view full details.
               </p>
             )}

@@ -5,6 +5,8 @@
  * and system configurations in your ViteJS admin panel.
  */
 
+import { AuthService } from "./auth";
+
 export interface CreateTradingPairDto {
   symbol: string;
   baseAsset: string;
@@ -153,8 +155,14 @@ export class CexEngineAdminClient {
   private baseUrl: string;
   private authToken: string | null = null;
 
+  private getToken = () => {
+    const authService = AuthService.getInstance();
+    return authService.getToken();
+  };
+
   constructor() {
     this.baseUrl = `${import.meta.env.VITE_API_ENGINE_URL || ""}/api/v1/cex/admin`;
+    this.authToken = this.getToken();
   }
 
   /**

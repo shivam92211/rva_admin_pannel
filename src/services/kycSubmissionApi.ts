@@ -1,104 +1,110 @@
-import axios, { type AxiosInstance } from 'axios'
+import axios, { type AxiosInstance } from 'axios';
+import { AuthService } from './auth';
 
 export interface KycSubmission {
-  id: string
-  userId: string
-  level: number
-  status: string
-  firstName: string
-  lastName: string
-  dateOfBirth: string
-  nationality: string
-  idType: string
-  idNumber: string
-  idFrontImage: string
-  idBackImage?: string
-  selfieImage: string
-  addressProof?: string
-  utilityBill?: string
-  expireDate?: string
-  submittedAt: string
-  reviewedAt?: string
-  reviewedBy?: string
-  rejectionReason?: string
-  rejectReason?: string
-  sentToKucoin: boolean
-  sentAt?: string
-  kucoinSubmissionId?: string
-  checkedAt?: string
-  errorMessage?: string
-  createdAt: string
-  updatedAt: string
+  id: string;
+  userId: string;
+  level: number;
+  status: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  nationality: string;
+  idType: string;
+  idNumber: string;
+  idFrontImage: string;
+  idBackImage?: string;
+  selfieImage: string;
+  addressProof?: string;
+  utilityBill?: string;
+  expireDate?: string;
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  rejectionReason?: string;
+  rejectReason?: string;
+  sentToKucoin: boolean;
+  sentAt?: string;
+  kucoinSubmissionId?: string;
+  checkedAt?: string;
+  errorMessage?: string;
+  createdAt: string;
+  updatedAt: string;
   user: {
-    id: string
-    email: string
-    username: string
-    firstName?: string
-    lastName?: string
-    phone?: string
-    isEmailVerified?: boolean
-    isPhoneVerified?: boolean
-    isKycVerified?: boolean
-  }
+    id: string;
+    email: string;
+    username: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    isEmailVerified?: boolean;
+    isPhoneVerified?: boolean;
+    isKycVerified?: boolean;
+  };
 }
 
 export interface PaginatedKycSubmissionsResponse {
-  kycSubmissions: KycSubmission[]
+  kycSubmissions: KycSubmission[];
   pagination: {
-    currentPage: number
-    limit: number
-    totalCount: number
-    totalPages: number
-    hasNextPage: boolean
-    hasPrevPage: boolean
-  }
+    currentPage: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
 }
 
 export interface GetKycSubmissionsParams {
-  page?: number
-  limit?: number
-  search?: string
-  status?: string
-  level?: string
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  level?: string;
 }
 
 export interface UpdateKycStatusParams {
-  status: string
-  reviewedBy?: string
-  rejectionReason?: string
+  status: string;
+  reviewedBy?: string;
+  rejectionReason?: string;
 }
 
 class KycSubmissionAPI {
-  private client: AxiosInstance
+  private client: AxiosInstance;
+  private getToken = () => {
+    const authService = AuthService.getInstance();
+    return authService.getToken();
+  };
 
   constructor() {
     this.client = axios.create({
-      baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
+      baseURL: import.meta.env.VITE_API_BASE_URL!,
       timeout: 30000,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.getToken()}`
       }
-    })
+    });
   }
 
   async getKycSubmissions(params?: GetKycSubmissionsParams): Promise<PaginatedKycSubmissionsResponse> {
     const response = await this.client.get('/api/v1/kyc-submissions', {
       params
-    })
+    });
 
-    return response.data
+    return response.data;
   }
 
   async getKycSubmissionById(id: string): Promise<KycSubmission> {
-    const response = await this.client.get<KycSubmission>(`/api/v1/kyc-submissions/${id}`)
-    return response.data
+    const response = await this.client.get<KycSubmission>(`/api/v1/kyc-submissions/${id}`);
+    return response.data;
   }
 
-  async updateKycSubmissionStatus(id: string, updateData: UpdateKycStatusParams): Promise<{ id: string; status: string; message: string }> {
-    const response = await this.client.patch(`/api/v1/kyc-submissions/${id}/status`, updateData)
-    return response.data
+  async updateKycSubmissionStatus(id: string, updateData: UpdateKycStatusParams): Promise<{ id: string; status: string; message: string; }> {
+    const response = await this.client.patch(`/api/v1/kyc-submissions/${id}/status`, updateData);
+    return response.data;
   }
 }
 
-export const kycSubmissionApi = new KycSubmissionAPI()
-export default kycSubmissionApi
+export const kycSubmissionApi = new KycSubmissionAPI();
+export default kycSubmissionApi;
