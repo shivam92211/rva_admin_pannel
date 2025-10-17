@@ -159,6 +159,17 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
                 : `${displayName(kycSubmission.firstName)} ${displayName(kycSubmission.lastName)}`
               }
             </div>
+          </DialogTitle>
+          <DialogDescription className=' flex justify-between align-text-bottom'>
+            <div className="">
+              Complete KYC submission information for {showSensitiveData ? kycSubmission.user.username : displaySensitiveText(kycSubmission.user.username)}
+              {!showSensitiveData && (
+                <span className="block text-xs text-amber-600 mt-1">
+                  🔒 Sensitive data is hidden for GDPR compliance. Click "Show Data" to reveal.
+                </span>
+              )}
+            </div>
+
             <Button
               variant="ghost"
               size="sm"
@@ -178,14 +189,6 @@ export const KycDetailsDialog: React.FC<KycDetailsDialogProps> = ({
                 </>
               )}
             </Button>
-          </DialogTitle>
-          <DialogDescription>
-            Complete KYC submission information for {showSensitiveData ? kycSubmission.user.username : displaySensitiveText(kycSubmission.user.username)}
-            {!showSensitiveData && (
-              <span className="block text-xs text-amber-600 mt-1">
-                🔒 Sensitive data is hidden for GDPR compliance. Click "Show Data" to reveal.
-              </span>
-            )}
           </DialogDescription>
         </DialogHeader>
 

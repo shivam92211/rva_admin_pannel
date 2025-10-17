@@ -1,15 +1,16 @@
-import React, { useState } from 'react'
-import { useWithdrawalStore } from '@/store/withdrawal'
-import { WithdrawalStatusBadge } from './WithdrawalStatusBadge'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Search, RefreshCw, Eye, EyeOff, ExternalLink } from 'lucide-react'
-import { format } from 'date-fns'
-import RefreshButton from '../common/RefreshButton'
-import CopyButton from '../common/CopyButton'
+import React, { useState } from 'react';
+import { useWithdrawalStore } from '@/store/withdrawal';
+import { WithdrawalStatusBadge } from './WithdrawalStatusBadge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Search, RefreshCw, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { format } from 'date-fns';
+import RefreshButton from '../common/RefreshButton';
+import CopyButton from '../common/CopyButton';
 import { cipherEmail, obfuscateText, maskString } from '@/utils/security';
+import { DialogDescription } from '@radix-ui/react-dialog';
 
 export const WithdrawalHistoryTable: React.FC = () => {
   const {
@@ -19,11 +20,11 @@ export const WithdrawalHistoryTable: React.FC = () => {
     fetchWithdrawals,
     fetchWithdrawalDetail,
     clearSelectedWithdrawal
-  } = useWithdrawalStore()
+  } = useWithdrawalStore();
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [showSensitiveData, setShowSensitiveData] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showSensitiveData, setShowSensitiveData] = useState(false);
 
   // Display helper functions for GDPR compliance
   const displayEmail = (email: string | undefined | null) => {
@@ -49,37 +50,37 @@ export const WithdrawalHistoryTable: React.FC = () => {
       withdrawal.toAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (withdrawal.txHash && withdrawal.txHash.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (withdrawal.user?.email && withdrawal.user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (withdrawal.user?.username && withdrawal.user.username.toLowerCase().includes(searchTerm.toLowerCase()))
+      (withdrawal.user?.username && withdrawal.user.username.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesStatus = statusFilter === 'all' || withdrawal.status === statusFilter
+    const matchesStatus = statusFilter === 'all' || withdrawal.status === statusFilter;
 
-    return matchesSearch && matchesStatus
-  })
+    return matchesSearch && matchesStatus;
+  });
 
   const handleRefresh = () => {
-    fetchWithdrawals()
-  }
+    fetchWithdrawals();
+  };
 
   const handleViewDetails = (id: string) => {
-    fetchWithdrawalDetail(id)
-  }
+    fetchWithdrawalDetail(id);
+  };
 
   const truncateId = (id: string) => {
-    if (!id) return 'N/A'
-    return `${id.slice(0, 8)}...${id.slice(-4)}`
-  }
+    if (!id) return 'N/A';
+    return `${id.slice(0, 8)}...${id.slice(-4)}`;
+  };
 
   const truncateAddress = (address: string) => {
-    if (!address) return 'N/A'
-    if (address.length <= 20) return address
-    return `${address.slice(0, 8)}...${address.slice(-8)}`
-  }
+    if (!address) return 'N/A';
+    if (address.length <= 20) return address;
+    return `${address.slice(0, 8)}...${address.slice(-8)}`;
+  };
 
   const getBlockExplorerUrl = (txHash: string) => {
-    if (!txHash) return '#'
+    if (!txHash) return '#';
     // Default to Etherscan - could be enhanced based on chain detection
-    return `https://etherscan.io/tx/${txHash}`
-  }
+    return `https://etherscan.io/tx/${txHash}`;
+  };
 
   if (isLoading && withdrawals.length === 0) {
     return (
@@ -89,7 +90,7 @@ export const WithdrawalHistoryTable: React.FC = () => {
           <span className="ml-2 text-gray-400">Loading withdrawal history...</span>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -236,32 +237,38 @@ export const WithdrawalHistoryTable: React.FC = () => {
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>Withdrawal Details</DialogTitle>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSensitiveData(!showSensitiveData)}
-                  className="flex items-center gap-2"
-                >
-                  {showSensitiveData ? (
-                    <>
-                      <EyeOff className="h-4 w-4" />
-                      Hide Data
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="h-4 w-4" />
-                      Show Data
-                    </>
-                  )}
-                </Button>
-              </div>
             </div>
-            {!showSensitiveData && (
-              <p className={`text-sm text-amber-600 mt-2`}>
-                🔒 Sensitive data is hidden for privacy. Click "Show Data" to view full details.
-              </p>
-            )}
+
+            <DialogDescription className=' flex justify-between align-text-bottom'>
+              <div className="">
+                {!showSensitiveData && (
+                  <span className="block text-xs text-amber-600 mt-1">
+                    🔒 Sensitive data is hidden for privacy. Click "Show Data" to view full details.
+                  </span>
+                )}
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSensitiveData(!showSensitiveData)}
+                className="flex items-center gap-2 text-sm"
+                title={showSensitiveData ? "Hide sensitive data (GDPR)" : "Show sensitive data"}
+              >
+                {showSensitiveData ? (
+                  <>
+                    <EyeOff className="h-4 w-4" />
+                    Hide Data
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    Show Data
+                  </>
+                )}
+              </Button>
+            </DialogDescription>
+
           </DialogHeader>
           {selectedWithdrawal && (
             <div className="space-y-4">
@@ -359,5 +366,5 @@ export const WithdrawalHistoryTable: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};

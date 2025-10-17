@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import RefreshButton from '../common/RefreshButton';
 import CopyButton from '../common/CopyButton';
 import { cipherEmail, obfuscateText, maskString } from '@/utils/security';
+import { DialogDescription } from '@radix-ui/react-dialog';
 
 export const DepositHistoryTable: React.FC = () => {
   const {
@@ -283,33 +284,39 @@ export const DepositHistoryTable: React.FC = () => {
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>Deposit Details</DialogTitle>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSensitiveData(!showSensitiveData)}
-                  className="flex items-center gap-2"
-                >
-                  {showSensitiveData ? (
-                    <>
-                      <EyeOff className="h-4 w-4" />
-                      Hide Data
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="h-4 w-4" />
-                      Show Data
-                    </>
-                  )}
-                </Button>
-              </div>
             </div>
-            {!showSensitiveData && (
-              <p className={`text-sm text-amber-600 mt-2`}>
-                🔒 Sensitive data is hidden for privacy. Click "Show Data" to view full details.
-              </p>
-            )}
+
+            <DialogDescription className=' flex justify-between align-text-bottom'>
+              <div className="">
+                {!showSensitiveData && (
+                  <span className="block text-xs text-amber-600 mt-1">
+                    🔒 Sensitive data is hidden for GDPR compliance. Click "Show Data" to reveal.
+                  </span>
+                )}
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSensitiveData(!showSensitiveData)}
+                className="flex items-center gap-2 text-sm"
+                title={showSensitiveData ? "Hide sensitive data (GDPR)" : "Show sensitive data"}
+              >
+                {showSensitiveData ? (
+                  <>
+                    <EyeOff className="h-4 w-4" />
+                    Hide Data
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    Show Data
+                  </>
+                )}
+              </Button>
+            </DialogDescription>
           </DialogHeader>
+
           {selectedDeposit && (
             <div className="space-y-6">
               {/* Transaction Information */}

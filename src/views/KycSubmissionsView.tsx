@@ -9,15 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Search, RefreshCw, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
+
+import { Search, RefreshCw, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, Eye } from 'lucide-react'
 import { kycSubmissionApi, type KycSubmission, type PaginatedKycSubmissionsResponse } from '@/services/kycSubmissionApi'
 import { KycDetailsDialog } from '@/components/KycDetailsDialog'
 import RefreshButton from '@/components/common/RefreshButton'
@@ -83,6 +76,15 @@ const KycSubmissionsView: React.FC = () => {
     setStatusFilter(value)
     setCurrentPage(1) // Reset to first page when filtering
   }
+
+  const clearAllFilters = () => {
+    setSearchInput('')
+    setSearchTerm('')
+    setStatusFilter('all')
+    setCurrentPage(1)
+  }
+
+  const hasActiveFilters = searchInput !== '' || statusFilter !== 'all'
 
   const handleUpdateStatus = async (submissionId: string, newStatus: string, rejectionReason?: string) => {
     try {
@@ -172,7 +174,7 @@ const KycSubmissionsView: React.FC = () => {
   const getActionButtons = (submission: KycSubmission) => {
     if (submission.status === 'PENDING' || submission.status === 'PROCESSING') {
       return (
-        <div className="flex gap-1">
+        <>
           <Button
             variant="outline"
             size="sm"
@@ -193,12 +195,12 @@ const KycSubmissionsView: React.FC = () => {
             <XCircle className="h-4 w-4 mr-1" />
             Reject
           </Button>
-        </div>
+        </>
       )
     }
 
     return (
-      <span className="text-sm text-muted-foreground">
+      <span className="text-sm text-gray-400">
         {submission.reviewedAt ? `Reviewed ${formatDate(submission.reviewedAt)}` : 'No actions available'}
       </span>
     )
@@ -216,13 +218,13 @@ const KycSubmissionsView: React.FC = () => {
       </PageHeader>
 
       <div className="flex-1 p-6 overflow-hidden">
-        <div className="bg-card rounded-lg p-6 h-full flex flex-col">
+        <div className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
           <div className="flex items-center gap-4 mb-6 flex-shrink-0">
             <div className="relative flex-1 max-w-sm">
               {loading && searchTerm ? (
-                <RefreshCw className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 animate-spin" />
+                <RefreshCw className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 animate-spin" />
               ) : (
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               )}
               <Input
                 placeholder="Search by name, email, ID number..."
@@ -245,104 +247,100 @@ const KycSubmissionsView: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            {/* <div className="w-48">
-              <Select value={levelFilter} onValueChange={handleLevelFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Level</SelectItem>
-                  <SelectItem value="1">Level 1</SelectItem>
-                  <SelectItem value="2">Level 2</SelectItem>
-                  <SelectItem value="3">Level 3</SelectItem>
-                </SelectContent>
-              </Select>
-            </div> */}
-            <div className="text-sm text-muted-foreground">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAllFilters}
+              disabled={!hasActiveFilters}
+              className="flex items-center gap-2 shrink-0"
+              title="Clear all filters"
+            >
+              <X className="h-4 w-4" />
+              Clear
+            </Button>
+            <div className="text-sm text-gray-400">
               {total} submission{total !== 1 ? 's' : ''} found
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden rounded-md border">
-            <div className="h-full overflow-auto">
-              <Table>
-                <TableHeader className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Level</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Personal Info</TableHead>
-                    <TableHead>Country</TableHead>
-                    <TableHead>ID Type</TableHead>
-                    <TableHead>Submitted</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">
-                        <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
-                        Loading KYC submissions...
-                      </TableCell>
-                    </TableRow>
-                  ) : kycSubmissions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        No KYC submissions found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    kycSubmissions.map((submission) => (
-                      <TableRow
-                        key={submission.id}
-                        className="cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => handleKycRowClick(submission)}
-                      >
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{submission.user.username}</span>
-                            <span className="text-sm text-muted-foreground">{cipherEmail(submission.user.email)}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {getLevelBadge(submission.level)}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(submission.status)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{obfuscateName(`${submission.firstName} ${submission.lastName}`)}</span>
-                            <span className="text-sm text-muted-foreground">{obfuscateText(submission.idNumber)}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {obfuscateText(submission.nationality)}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {submission.idType.toUpperCase()}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(submission.submittedAt)}
-                        </TableCell>
-                        <TableCell>
-                          <div onClick={(e) => e.stopPropagation()}>
-                            {getActionButtons(submission)}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+          <div className="flex-1 overflow-x-auto overflow-y-auto min-h-0">
+            {loading ? (
+              <div className="text-center py-12">
+                <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto" />
+                <span className="ml-2 text-gray-400">Loading KYC submissions...</span>
+              </div>
+            ) : kycSubmissions.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400">No KYC submissions found</p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">User</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Level</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Status</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Personal Info</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Country</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">ID Type</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Submitted</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {kycSubmissions.map((submission) => (
+                    <tr key={submission.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
+                      <td className="py-3 px-4">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-white">{submission.user.username}</span>
+                          <span className="text-sm text-gray-400">{cipherEmail(submission.user.email)}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        {getLevelBadge(submission.level)}
+                      </td>
+                      <td className="py-3 px-4">
+                        {getStatusBadge(submission.status)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-300">{obfuscateName(`${submission.firstName} ${submission.lastName}`)}</span>
+                          <span className="text-sm text-gray-400">{obfuscateText(submission.idNumber)}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-gray-300">
+                        {obfuscateText(submission.nationality)}
+                      </td>
+                      <td className="py-3 px-4 text-gray-300">
+                        {submission.idType.toUpperCase()}
+                      </td>
+                      <td className="py-3 px-4 text-gray-400">
+                        {formatDate(submission.submittedAt)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleKycRowClick(submission)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-gray-400 hover:text-white"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          {getActionButtons(submission)}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between space-x-2 py-4 flex-shrink-0">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-gray-400">
                 Page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center space-x-2">
@@ -371,7 +369,7 @@ const KycSubmissionsView: React.FC = () => {
                     return (
                       <React.Fragment key={page}>
                         {showEllipsis && (
-                          <span className="px-3 py-1 text-sm text-muted-foreground">...</span>
+                          <span className="px-3 py-1 text-sm text-gray-400">...</span>
                         )}
                         <Button
                           variant={currentPage === page ? "default" : "outline"}

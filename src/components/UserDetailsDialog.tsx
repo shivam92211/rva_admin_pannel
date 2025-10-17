@@ -1,28 +1,28 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { type User, type UserDevicesResponse, userApi } from '@/services/userApi'
-import { User as UserIcon, Mail, Phone, Calendar, Shield, ShieldCheck, Key, CheckCircle, XCircle, Monitor, Loader2, Eye, EyeOff } from 'lucide-react'
-import DeviceInfo from './DeviceInfo'
-import { 
-  cipherEmail, 
-  cypherPhone, 
-  obfuscateName, 
-  obfuscateUserId, 
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { type User, type UserDevicesResponse, userApi } from '@/services/userApi';
+import { User as UserIcon, Mail, Phone, Calendar, Shield, ShieldCheck, Key, CheckCircle, XCircle, Monitor, Loader2, Eye, EyeOff } from 'lucide-react';
+import DeviceInfo from './DeviceInfo';
+import {
+  cipherEmail,
+  cypherPhone,
+  obfuscateName,
+  obfuscateUserId,
   obfuscateText
-} from '@/utils/security'
+} from '@/utils/security';
 
 interface UserDetailsDialogProps {
-  user: User | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  user: User | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
@@ -30,74 +30,86 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const [devices, setDevices] = useState<UserDevicesResponse | null>(null)
-  const [loadingDevices, setLoadingDevices] = useState(false)
-  const [devicesError, setDevicesError] = useState<string | null>(null)
-  const [showSensitiveData, setShowSensitiveData] = useState(false) // GDPR protection - off by default
+  const [devices, setDevices] = useState<UserDevicesResponse | null>(null);
+  const [loadingDevices, setLoadingDevices] = useState(false);
+  const [devicesError, setDevicesError] = useState<string | null>(null);
+  const [showSensitiveData, setShowSensitiveData] = useState(false); // GDPR protection - off by default
 
   // Fetch devices when dialog opens and user is selected
   useEffect(() => {
     if (open && user) {
-      setLoadingDevices(true)
-      setDevicesError(null)
+      setLoadingDevices(true);
+      setDevicesError(null);
 
       userApi.getUserDevices(user.id)
         .then(setDevices)
         .catch((error) => {
-          console.error('Failed to fetch user devices:', error)
-          setDevicesError('Failed to load device information')
+          console.error('Failed to fetch user devices:', error);
+          setDevicesError('Failed to load device information');
         })
-        .finally(() => setLoadingDevices(false))
+        .finally(() => setLoadingDevices(false));
     } else {
       // Reset devices when dialog closes
-      setDevices(null)
-      setDevicesError(null)
+      setDevices(null);
+      setDevicesError(null);
     }
-  }, [open, user])
+  }, [open, user]);
 
-  if (!user) return null
+  if (!user) return null;
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
-  }
+    return new Date(dateString).toLocaleString();
+  };
 
   const getBadgeVariant = (isTrue: boolean) => {
-    return isTrue ? 'default' : 'secondary'
-  }
+    return isTrue ? 'default' : 'secondary';
+  };
 
   const getVerificationIcon = (isVerified: boolean) => {
     return isVerified ? (
       <CheckCircle className="h-4 w-4 text-green-500" />
     ) : (
       <XCircle className="h-4 w-4 text-red-500" />
-    )
-  }
+    );
+  };
 
   // Helper functions for displaying sensitive data with GDPR protection
   const displayEmail = (email: string) => {
-    return showSensitiveData ? email : cipherEmail(email)
-  }
+    return showSensitiveData ? email : cipherEmail(email);
+  };
 
   const displayPhone = (phone: string) => {
-    return showSensitiveData ? phone : cypherPhone(phone)
-  }
+    return showSensitiveData ? phone : cypherPhone(phone);
+  };
 
   const displayName = (name: string) => {
-    return showSensitiveData ? name : obfuscateName(name)
-  }
+    return showSensitiveData ? name : obfuscateName(name);
+  };
 
   const displayUserId = (id: string) => {
-    return showSensitiveData ? id : obfuscateUserId(id)
-  }
+    return showSensitiveData ? id : obfuscateUserId(id);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
+
           <DialogTitle className="flex items-center gap-2 justify-between">
             <div className="flex items-center gap-2">
               <UserIcon className="h-5 w-5" />
               User Details - {showSensitiveData ? user.username : obfuscateText(user.username)}
+            </div>
+          </DialogTitle>
+
+          <DialogDescription className=' flex justify-between align-text-bottom'>
+            <div className="">
+              Complete information for user {displayEmail(user.email)}
+              {!showSensitiveData && (
+                <span className="block text-xs text-amber-600 mt-1">
+                  🔒 Sensitive data is hidden for GDPR compliance. Click "Show Data" to reveal.
+                </span>
+              )}
             </div>
             <Button
               variant="ghost"
@@ -118,14 +130,6 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                 </>
               )}
             </Button>
-          </DialogTitle>
-          <DialogDescription>
-            Complete information for user {displayEmail(user.email)}
-            {!showSensitiveData && (
-              <span className="block text-xs text-amber-600 mt-1">
-                🔒 Sensitive data is hidden for GDPR compliance. Click "Show Data" to reveal.
-              </span>
-            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -351,5 +355,5 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
