@@ -12,14 +12,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -36,7 +28,9 @@ import {
   Pause,
   Square,
   Trash2,
-  TrendingUp
+  TrendingUp,
+  Eye,
+  X
 } from 'lucide-react';
 import {
   cexAdminClient,
@@ -160,6 +154,16 @@ const TradingPairsView: React.FC = () => {
     setQuoteAssetFilter(value);
     setCurrentPage(1);
   };
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setBaseAssetFilter('all');
+    setQuoteAssetFilter('all');
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = searchTerm !== '' || statusFilter !== 'all' || baseAssetFilter !== 'all' || quoteAssetFilter !== 'all';
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -365,24 +369,28 @@ const TradingPairsView: React.FC = () => {
         title="Trading Pairs"
         description="Create and manage trading pairs for the exchange"
       >
-        <div className="flex gap-2">
+        <div className="flex gap-2 my-0">
           <RefreshButton onClick={() => {
             loadTradingPairs();
             loadActiveBotPairs();
           }} />
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button size='sm' onClick={() => setShowForm(true)}>
+            <Plus className=" p-0" />
             New Trading Pair
           </Button>
         </div>
       </PageHeader>
 
       <div className="flex-1 p-6 overflow-hidden">
-        <div className="bg-card rounded-lg p-6 h-full flex flex-col">
+        <div className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
           {/* Filters */}
           <div className="flex items-center gap-4 mb-6 flex-shrink-0">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              {loading && searchTerm ? (
+                <RefreshCw className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              )}
               <Input
                 placeholder="Search trading pairs..."
                 value={searchTerm}
@@ -429,65 +437,81 @@ const TradingPairsView: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="text-sm text-muted-foreground">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAllFilters}
+              disabled={!hasActiveFilters}
+              className="flex items-center gap-2 shrink-0"
+              title="Clear all filters"
+            >
+              <X className="h-4 w-4" />
+              Clear
+            </Button>
+            <div className="text-sm text-gray-400">
               {total} pair{total !== 1 ? 's' : ''} found
             </div>
           </div>
 
           {/* Table */}
-          <div className="flex-1 overflow-hidden rounded-md border">
+          <div className="flex-1 overflow-hidden">
             <div className="h-full overflow-auto">
-              <Table>
-                <TableHeader className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                  <TableRow>
-                    <TableHead>Symbol</TableHead>
-                    <TableHead>Base Asset</TableHead>
-                    <TableHead>Quote Asset</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Min Order Size</TableHead>
-                    <TableHead>Maker Fee</TableHead>
-                    <TableHead>Taker Fee</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <table className="w-full">
+                <thead className="sticky top-0 bg-gray-800/95 backdrop-blur-sm border-b border-gray-700/50">
+                  <tr>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Symbol</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Base Asset</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Quote Asset</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Min Order Size</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Maker Fee</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Taker Fee</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Created</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-300">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8">
-                        <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
-                        Loading trading pairs...
-                      </TableCell>
-                    </TableRow>
+                    <tr>
+                      <td colSpan={9} className="text-center py-8">
+                        <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2 text-gray-400" />
+                        <div className="text-gray-400">Loading trading pairs...</div>
+                      </td>
+                    </tr>
                   ) : tradingPairs.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <tr>
+                      <td colSpan={9} className="text-center py-8 text-gray-400">
                         No trading pairs found
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   ) : (
                     tradingPairs.map((pair) => (
-                      <TableRow
-                        key={pair.id}
-                        className="cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => handleTradingPairRowClick(pair)}
-                      >
-                        <TableCell className="font-medium font-mono">{pair.symbol}</TableCell>
-                        <TableCell>{pair.baseAsset}</TableCell>
-                        <TableCell>{pair.quoteAsset}</TableCell>
-                        <TableCell>
+                      <tr key={pair.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
+                        <td className="py-3 px-4 font-medium font-mono text-white">{pair.symbol}</td>
+                        <td className="py-3 px-4 text-gray-300">{pair.baseAsset}</td>
+                        <td className="py-3 px-4 text-gray-300">{pair.quoteAsset}</td>
+                        <td className="py-3 px-4">
                           {getStatusBadge(pair.status)}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">
+                        </td>
+                        <td className="py-3 px-4 font-mono text-sm text-gray-300">
                           {pair.minOrderSize} {pair.baseAsset}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{pair.makerFeeRate}%</TableCell>
-                        <TableCell className="font-mono text-sm">{pair.takerFeeRate}%</TableCell>
-                        <TableCell className="text-muted-foreground">
+                        </td>
+                        <td className="py-3 px-4 font-mono text-sm text-gray-300">{pair.makerFeeRate}%</td>
+                        <td className="py-3 px-4 font-mono text-sm text-gray-300">{pair.takerFeeRate}%</td>
+                        <td className="py-3 px-4 text-gray-400">
                           {formatDate(pair.createdAt)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-1">
+                            <Button
+                              onClick={() => handleTradingPairRowClick(pair)}
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-400 hover:text-white"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            
                             {/* Market Bot Control - Most Prominent */}
                             <Button
                               variant={activeBotPairs.has(pair.symbol) ? "default" : "outline"}
@@ -566,19 +590,19 @@ const TradingPairsView: React.FC = () => {
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     ))
                   )}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </div>
           </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between space-x-2 py-4 flex-shrink-0">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-gray-400">
                 Page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center space-x-2">
@@ -605,7 +629,7 @@ const TradingPairsView: React.FC = () => {
                     return (
                       <React.Fragment key={page}>
                         {showEllipsis && (
-                          <span className="px-3 py-1 text-sm text-muted-foreground">...</span>
+                          <span className="px-3 py-1 text-sm text-gray-400">...</span>
                         )}
                         <Button
                           variant={currentPage === page ? "default" : "outline"}

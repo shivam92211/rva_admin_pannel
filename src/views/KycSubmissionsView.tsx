@@ -249,7 +249,7 @@ const KycSubmissionsView: React.FC = () => {
             </div>
             <Button
               variant="outline"
-              size="sm"
+              // size="sm"
               onClick={clearAllFilters}
               disabled={!hasActiveFilters}
               className="flex items-center gap-2 shrink-0"
