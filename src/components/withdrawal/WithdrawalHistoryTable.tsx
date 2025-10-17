@@ -5,13 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search, RefreshCw, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Search, RefreshCw, Eye, EyeOff, ExternalLink, Play } from 'lucide-react';
 import { format } from 'date-fns';
 import RefreshButton from '../common/RefreshButton';
 import CopyButton from '../common/CopyButton';
 import { cipherEmail, obfuscateText, maskString } from '@/utils/security';
 import { DialogDescription } from '@radix-ui/react-dialog';
 import TableHeader from '../common/TableHeader';
+import { withdrawalApi } from '@/services/withdrawalApi';
+import { useSnackbarMsg } from '@/hooks/snackbar';
 
 export const WithdrawalHistoryTable: React.FC = () => {
   const {
@@ -23,9 +25,15 @@ export const WithdrawalHistoryTable: React.FC = () => {
     clearSelectedWithdrawal
   } = useWithdrawalStore();
 
+  const [, setSnackbarMsg] = useSnackbarMsg();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showSensitiveData, setShowSensitiveData] = useState(false);
+  
+  // Trigger withdrawal confirmation state
+  const [triggerConfirmOpen, setTriggerConfirmOpen] = useState(false);
+  const [selectedWithdrawalForTrigger, setSelectedWithdrawalForTrigger] = useState<typeof withdrawals[0] | null>(null);
+  const [isTriggeringWithdrawal, setIsTriggeringWithdrawal] = useState(false);
 
   // Display helper functions for GDPR compliance
   const displayEmail = (email: string | undefined | null) => {
@@ -42,6 +50,12 @@ export const WithdrawalHistoryTable: React.FC = () => {
 
   const displayText = (text: string | undefined | null) => {
     return showSensitiveData ? (text || 'N/A') : obfuscateText(text || undefined);
+  };
+
+  // Check if withdrawal can be triggered (pending statuses)
+  const canTriggerWithdrawal = (status: string) => {
+    const upperStatus = status?.toUpperCase();
+    return ['PENDING', 'PROCESSING', 'CONFIRMING'].includes(upperStatus);
   };
 
   // Filter withdrawals based on search and filters
@@ -64,6 +78,39 @@ export const WithdrawalHistoryTable: React.FC = () => {
 
   const handleViewDetails = (id: string) => {
     fetchWithdrawalDetail(id);
+  };
+
+  const handleTriggerWithdrawalClick = (withdrawal: typeof withdrawals[0]) => {
+    setSelectedWithdrawalForTrigger(withdrawal);
+    setTriggerConfirmOpen(true);
+  };
+
+  const handleTriggerWithdrawal = async () => {
+    if (!selectedWithdrawalForTrigger) return;
+
+    try {
+      setIsTriggeringWithdrawal(true);
+      const result = await withdrawalApi.triggerWithdrawalForId(selectedWithdrawalForTrigger.id);
+      
+      setSnackbarMsg({
+        msg: result.message || 'Withdrawal triggered successfully',
+        type: 'success'
+      });
+
+      // Refresh the withdrawals data
+      fetchWithdrawals();
+      
+    } catch (error: any) {
+      console.error('Failed to trigger withdrawal:', error);
+      setSnackbarMsg({
+        msg: `Failed to trigger withdrawal: ${error.response?.data?.message || error.message || 'Unknown error'}`,
+        type: 'error'
+      });
+    } finally {
+      setIsTriggeringWithdrawal(false);
+      setTriggerConfirmOpen(false);
+      setSelectedWithdrawalForTrigger(null);
+    }
   };
 
   const truncateId = (id: string) => {
@@ -218,14 +265,29 @@ export const WithdrawalHistoryTable: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <Button
-                        onClick={() => handleViewDetails(withdrawal.id)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-gray-400 hover:text-white"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleViewDetails(withdrawal.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-400 hover:text-white"
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        {canTriggerWithdrawal(withdrawal.status) && (
+                          <Button
+                            onClick={() => handleTriggerWithdrawalClick(withdrawal)}
+                            variant="outline"
+                            size="sm"
+                            className="text-green-400 border-green-600 hover:bg-green-600 hover:text-white"
+                            title="Trigger Withdrawal"
+                            disabled={isTriggeringWithdrawal}
+                          >
+                            <Play className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -367,6 +429,79 @@ export const WithdrawalHistoryTable: React.FC = () => {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Trigger Withdrawal Confirmation Dialog */}
+      <Dialog open={triggerConfirmOpen} onOpenChange={setTriggerConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Trigger Withdrawal</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to trigger the withdrawal for this transaction?
+            </DialogDescription>
+          </DialogHeader>
+          {selectedWithdrawalForTrigger && (
+            <div className="space-y-4">
+              <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Withdrawal ID:</span>
+                    <div className="font-mono text-xs break-all">{selectedWithdrawalForTrigger.id}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">User:</span>
+                    <div>{cipherEmail(selectedWithdrawalForTrigger.user?.email)}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Amount:</span>
+                    <div className="font-mono text-red-600">
+                      -{parseFloat(selectedWithdrawalForTrigger.amount).toLocaleString(undefined, { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 8 
+                      })} ETH
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                    <div>
+                      <WithdrawalStatusBadge status={selectedWithdrawalForTrigger.status} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-amber-600 dark:text-amber-400">
+                ⚠️ This action will process the withdrawal and cannot be undone. Make sure all details are correct before proceeding.
+              </p>
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setTriggerConfirmOpen(false)}
+              disabled={isTriggeringWithdrawal}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="default" 
+              onClick={handleTriggerWithdrawal}
+              disabled={isTriggeringWithdrawal}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isTriggeringWithdrawal ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-2" />
+                  Trigger Withdrawal
+                </>
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
