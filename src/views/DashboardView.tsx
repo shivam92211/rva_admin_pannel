@@ -111,6 +111,12 @@ const DashboardView: React.FC = () => {
           data: activityData.map(d => d.users),
           borderColor: 'rgb(59, 130, 246)',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: 'rgb(59, 130, 246)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
           tension: 0.4,
         },
         {
@@ -118,6 +124,12 @@ const DashboardView: React.FC = () => {
           data: activityData.map(d => d.deposits),
           borderColor: 'rgb(34, 197, 94)',
           backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: 'rgb(34, 197, 94)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
           tension: 0.4,
         },
         {
@@ -125,6 +137,12 @@ const DashboardView: React.FC = () => {
           data: activityData.map(d => d.withdrawals),
           borderColor: 'rgb(239, 68, 68)',
           backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: 'rgb(239, 68, 68)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
           tension: 0.4,
         }
       ]
@@ -132,14 +150,94 @@ const DashboardView: React.FC = () => {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index' as const,
+        intersect: false,
+      },
       plugins: {
+        title: {
+          display: true,
+          text: 'Daily Activity Trends',
+          font: {
+            size: 16,
+            weight: 'bold' as const,
+          },
+          padding: 20,
+        },
         legend: {
           position: 'top' as const,
+          labels: {
+            usePointStyle: true,
+            padding: 20,
+            font: {
+              size: 12,
+            },
+          },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: 'white',
+          bodyColor: 'white',
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          borderWidth: 1,
+          cornerRadius: 8,
+          displayColors: true,
+          callbacks: {
+            title: function(context: any) {
+              return `Date: ${context[0].label}`;
+            },
+            label: function(context: any) {
+              const value = context.parsed.y;
+              const datasetLabel = context.dataset.label;
+              return `${datasetLabel}: ${value.toLocaleString()}`;
+            },
+          },
         },
       },
       scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Date',
+            font: {
+              size: 14,
+              weight: 'bold' as const,
+            },
+            padding: 10,
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)',
+          },
+          ticks: {
+            font: {
+              size: 11,
+            },
+          },
+        },
         y: {
+          display: true,
           beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Count',
+            font: {
+              size: 14,
+              weight: 'bold' as const,
+            },
+            padding: 10,
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)',
+          },
+          ticks: {
+            font: {
+              size: 11,
+            },
+            callback: function(value: any) {
+              return value.toLocaleString();
+            },
+          },
         },
       },
     },
@@ -153,7 +251,13 @@ const DashboardView: React.FC = () => {
           label: 'Orders Placed',
           data: activityData.map(d => d.spotOrdersPlaced),
           borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+          backgroundColor: 'rgba(59, 130, 246, 0.3)',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: 'rgb(59, 130, 246)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
           fill: true,
           tension: 0.4,
         },
@@ -161,7 +265,13 @@ const DashboardView: React.FC = () => {
           label: 'Orders Executed',
           data: activityData.map(d => d.spotOrdersExecuted),
           borderColor: 'rgb(147, 51, 234)',
-          backgroundColor: 'rgba(147, 51, 234, 0.5)',
+          backgroundColor: 'rgba(147, 51, 234, 0.3)',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: 'rgb(147, 51, 234)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
           fill: true,
           tension: 0.4,
         }
@@ -170,15 +280,104 @@ const DashboardView: React.FC = () => {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index' as const,
+        intersect: false,
+      },
       plugins: {
+        title: {
+          display: true,
+          text: 'Spot Orders Performance',
+          font: {
+            size: 16,
+            weight: 'bold' as const,
+          },
+          padding: 20,
+        },
         legend: {
           position: 'top' as const,
+          labels: {
+            usePointStyle: true,
+            padding: 20,
+            font: {
+              size: 12,
+            },
+          },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: 'white',
+          bodyColor: 'white',
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          borderWidth: 1,
+          cornerRadius: 8,
+          displayColors: true,
+          callbacks: {
+            title: function(context: any) {
+              return `Date: ${context[0].label}`;
+            },
+            label: function(context: any) {
+              const value = context.parsed.y;
+              const datasetLabel = context.dataset.label;
+              return `${datasetLabel}: ${value.toLocaleString()}`;
+            },
+            footer: function(context: any) {
+              if (context.length >= 2) {
+                const placed = context.find((c: any) => c.dataset.label === 'Orders Placed')?.parsed?.y || 0;
+                const executed = context.find((c: any) => c.dataset.label === 'Orders Executed')?.parsed?.y || 0;
+                const executionRate = placed > 0 ? ((executed / placed) * 100).toFixed(1) : '0.0';
+                return `Execution Rate: ${executionRate}%`;
+              }
+              return '';
+            },
+          },
         },
       },
       scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Date',
+            font: {
+              size: 14,
+              weight: 'bold' as const,
+            },
+            padding: 10,
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)',
+          },
+          ticks: {
+            font: {
+              size: 11,
+            },
+          },
+        },
         y: {
+          display: true,
           beginAtZero: true,
           stacked: false,
+          title: {
+            display: true,
+            text: 'Number of Orders',
+            font: {
+              size: 14,
+              weight: 'bold' as const,
+            },
+            padding: 10,
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)',
+          },
+          ticks: {
+            font: {
+              size: 11,
+            },
+            callback: function(value: any) {
+              return value.toLocaleString();
+            },
+          },
         },
       },
     },
