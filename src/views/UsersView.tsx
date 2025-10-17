@@ -9,14 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+
 import {
   Dialog,
   DialogContent,
@@ -24,7 +17,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Search, RefreshCw, ChevronLeft, ChevronRight, Power, PowerOff, Shield, ShieldCheck, X } from 'lucide-react';
+import { Search, RefreshCw, ChevronLeft, ChevronRight, Power, PowerOff, Shield, ShieldCheck, X, Eye } from 'lucide-react';
 import { userApi, type User, type PaginatedUsersResponse } from '@/services/userApi';
 import { UserDetailsDialog } from '@/components/UserDetailsDialog';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -262,7 +255,7 @@ const UsersView: React.FC = () => {
       </PageHeader>
 
       <div className="flex-1 p-6 overflow-hidden">
-        <div className="bg-card rounded-lg p-6 h-full flex flex-col">
+        <div className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
           <div className="flex items-center gap-4 mb-6 flex-shrink-0">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -307,133 +300,131 @@ const UsersView: React.FC = () => {
               <X className="h-4 w-4" />
               Clear
             </Button>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-gray-400">
               {total} user{total !== 1 ? 's' : ''} found
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden rounded-md border">
-            <div className="h-full overflow-auto">
-              <Table>
-                <TableHeader className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                  <TableRow>
-                    <TableHead>Username</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Whitelist</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">
-                        <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
-                        Loading users...
-                      </TableCell>
-                    </TableRow>
-                  ) : users.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        No users found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    users.map((user) => (
-                      <TableRow
-                        key={user.id}
-                        className="cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => handleUserRowClick(user)}
-                      >
-                        <TableCell className="font-medium">{user.username}</TableCell>
-                        <TableCell className="text-muted-foreground">{cipherEmail(user.email)}</TableCell>
-                        <TableCell>
-                          {maskString(user.firstName || user.lastName
-                            ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-                            : '—')
-                          }
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {user.phoneNumber || user.phone || '—'}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(user.isActive)}
-                        </TableCell>
-                        <TableCell>
-                          {getWhitelistBadge(user.withdrawalWhitelist)}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(user.createdAt)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleUserActionClick(
-                                user.isActive ? 'deactivate' : 'activate',
-                                user
-                              )}
-                              disabled={loading}
-                              className={`flex items-center gap-2 ${user.isActive
-                                ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                                : 'hover:bg-green-50 hover:text-green-600 hover:border-green-200'
-                                }`}
-                            >
-                              {user.isActive ? (
-                                <>
-                                  <PowerOff className="h-4 w-4" />
-                                  Deactivate
-                                </>
-                              ) : (
-                                <>
-                                  <Power className="h-4 w-4" />
-                                  Activate
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleUserActionClick(
-                                user.withdrawalWhitelist ? 'removeWhitelist' : 'whitelist',
-                                user
-                              )}
-                              disabled={loading}
-                              className={`flex items-center gap-2 ${user.withdrawalWhitelist
-                                ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                                : 'hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
-                                }`}
-                            >
-                              {user.withdrawalWhitelist ? (
-                                <>
-                                  <Shield className="h-4 w-4" />
-                                  Remove
-                                </>
-                              ) : (
-                                <>
-                                  <ShieldCheck className="h-4 w-4" />
-                                  Whitelist
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+          <div className="flex-1 overflow-x-auto overflow-y-auto min-h-0">
+            {loading ? (
+              <div className="text-center py-12">
+                <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto" />
+                <span className="ml-2 text-gray-400">Loading users...</span>
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400">No users found</p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Username</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Email</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Name</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Phone</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Status</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Whitelist</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Created</th>
+                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
+                      <td className="py-3 px-4 font-medium text-white">{user.username}</td>
+                      <td className="py-3 px-4 text-gray-300">{cipherEmail(user.email)}</td>
+                      <td className="py-3 px-4 text-gray-300">
+                        {maskString(user.firstName || user.lastName
+                          ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                          : '—')
+                        }
+                      </td>
+                      <td className="py-3 px-4 text-gray-300">
+                        {user.phoneNumber || user.phone || '—'}
+                      </td>
+                      <td className="py-3 px-4">
+                        {getStatusBadge(user.isActive)}
+                      </td>
+                      <td className="py-3 px-4">
+                        {getWhitelistBadge(user.withdrawalWhitelist)}
+                      </td>
+                      <td className="py-3 px-4 text-gray-400">
+                        {formatDate(user.createdAt)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleUserRowClick(user)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-gray-400 hover:text-white"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUserActionClick(
+                              user.isActive ? 'deactivate' : 'activate',
+                              user
+                            )}
+                            disabled={loading}
+                            className={`flex items-center gap-2 ${user.isActive
+                              ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                              : 'hover:bg-green-50 hover:text-green-600 hover:border-green-200'
+                              }`}
+                          >
+                            {user.isActive ? (
+                              <>
+                                <PowerOff className="h-4 w-4" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <Power className="h-4 w-4" />
+                                Activate
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUserActionClick(
+                              user.withdrawalWhitelist ? 'removeWhitelist' : 'whitelist',
+                              user
+                            )}
+                            disabled={loading}
+                            className={`flex items-center gap-2 ${user.withdrawalWhitelist
+                              ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                              : 'hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
+                              }`}
+                          >
+                            {user.withdrawalWhitelist ? (
+                              <>
+                                <Shield className="h-4 w-4" />
+                                Remove
+                              </>
+                            ) : (
+                              <>
+                                <ShieldCheck className="h-4 w-4" />
+                                Whitelist
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between space-x-2 py-4 flex-shrink-0">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-gray-400">
                 Page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center space-x-2">
@@ -462,7 +453,7 @@ const UsersView: React.FC = () => {
                     return (
                       <React.Fragment key={page}>
                         {showEllipsis && (
-                          <span className="px-3 py-1 text-sm text-muted-foreground">...</span>
+                          <span className="px-3 py-1 text-sm text-gray-400">...</span>
                         )}
                         <Button
                           variant={currentPage === page ? "default" : "outline"}
