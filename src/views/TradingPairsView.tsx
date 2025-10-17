@@ -39,6 +39,7 @@ import {
 import { cexBotApi } from '@/services/cexbotApi';
 import RefreshButton from '@/components/common/RefreshButton';
 import { useSnackbarMsg } from '@/hooks/snackbar';
+import TableHeader from '@/components/common/TableHeader';
 
 const TradingPairsView: React.FC = () => {
   const [, setSnackbarMsg] = useSnackbarMsg();
@@ -439,7 +440,7 @@ const TradingPairsView: React.FC = () => {
             </div>
             <Button
               variant="outline"
-              size="sm"
+              // size="sm"
               onClick={clearAllFilters}
               disabled={!hasActiveFilters}
               className="flex items-center gap-2 shrink-0"
@@ -455,21 +456,20 @@ const TradingPairsView: React.FC = () => {
 
           {/* Table */}
           <div className="flex-1 overflow-hidden">
-            <div className="h-full overflow-auto">
+            <div className="h-full overflow-auto rounded-lg border border-gray-700/50">
               <table className="w-full">
-                <thead className="sticky top-0 bg-gray-800/95 backdrop-blur-sm border-b border-gray-700/50">
-                  <tr>
-                    <th className="text-left py-3 px-4 font-medium text-gray-300">Symbol</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-300">Base Asset</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-300">Quote Asset</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-300">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-300">Min Order Size</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-300">Maker Fee</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-300">Taker Fee</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-300">Created</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-300">Actions</th>
-                  </tr>
-                </thead>
+                <TableHeader headers={[
+                  "Symbol",
+                  "Base Asset",
+                  "Quote Asset",
+                  "Status",
+                  "Min Order Size",
+                  "Maker Fee",
+                  "Taker Fee",
+                  "Created",
+                  "Actions"
+                ]} />
+
                 <tbody>
                   {loading ? (
                     <tr>
@@ -511,7 +511,7 @@ const TradingPairsView: React.FC = () => {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
-                            
+
                             {/* Market Bot Control - Most Prominent */}
                             <Button
                               variant={activeBotPairs.has(pair.symbol) ? "default" : "outline"}
@@ -519,8 +519,8 @@ const TradingPairsView: React.FC = () => {
                               onClick={() => handleBotToggleClick(pair)}
                               disabled={botLoading.has(pair.symbol)}
                               className={`h-8 px-3 font-medium ${activeBotPairs.has(pair.symbol)
-                                  ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
-                                  : "border-green-200 text-green-600 hover:bg-green-100 hover:text-green-950 hover:border-green-300"
+                                ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                : "border-green-200 text-green-600 hover:bg-green-100 hover:text-green-950 hover:border-green-300"
                                 }`}
                               title={activeBotPairs.has(pair.symbol) ? "Disable Market Bot" : "Enable Market Bot"}
                             >
@@ -682,14 +682,14 @@ const TradingPairsView: React.FC = () => {
             onCancel={() => setShowForm(false)}
           />
         </DialogContent>
-      </Dialog>
+      </Dialog>;
 
       {/* Trading Pair Details Dialog */}
       <TradingPairDetailsDialog
         tradingPair={selectedTradingPair}
         open={detailsDialogOpen}
         onOpenChange={setDetailsDialogOpen}
-      />
+      />;
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
@@ -715,7 +715,7 @@ const TradingPairsView: React.FC = () => {
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog>;
 
       {/* Bot Toggle Confirmation Dialog */}
       <Dialog open={botConfirmOpen} onOpenChange={setBotConfirmOpen}>
@@ -769,7 +769,7 @@ const TradingPairsView: React.FC = () => {
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog>;
 
       {/* Market Action Confirmation Dialog */}
       <Dialog open={marketActionConfirmOpen} onOpenChange={setMarketActionConfirmOpen}>
@@ -820,7 +820,7 @@ const TradingPairsView: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 };
 
