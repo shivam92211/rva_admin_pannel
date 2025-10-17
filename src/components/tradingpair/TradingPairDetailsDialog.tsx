@@ -105,7 +105,7 @@ export const TradingPairDetailsDialog: React.FC<TradingPairDetailsDialogProps> =
                 <p className="text-sm">{tradingPair.quoteAssetPrecision} decimals</p>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Status</label>
+                <label className="text-sm font-medium text-muted-foreground mr-2">Status</label>
                 {getStatusBadge(tradingPair.status)}
               </div>
             </div>

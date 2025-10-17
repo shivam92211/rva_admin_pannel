@@ -553,46 +553,46 @@ const TradingPairsView: React.FC = () => {
                               <>
                                 <Button
                                   variant="outline"
-                                  size="sm"
+                                  // size="sm"
                                   onClick={() => handleMarketActionClick('suspend', pair)}
                                   disabled={loading}
                                   className="h-8 w-8 p-0"
                                   title="Suspend"
                                 >
-                                  <Pause className="h-3 w-3" />
+                                  <Pause className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="outline"
-                                  size="sm"
+                                  // size="sm"
                                   onClick={() => handleMarketActionClick('deactivate', pair)}
                                   disabled={loading}
                                   className="h-8 w-8 p-0"
                                   title="Deactivate"
                                 >
-                                  <Square className="h-3 w-3" />
+                                  <Square className="h-4 w-4" />
                                 </Button>
                               </>
                             ) : (
                               <Button
                                 variant="outline"
-                                size="sm"
+                                // size="sm"
                                 onClick={() => handleMarketActionClick('activate', pair)}
                                 disabled={loading}
                                 className="h-8 w-8 p-0"
                                 title="Activate"
                               >
-                                <Play className="h-3 w-3" />
+                                <Play className="h-4 w-4" />
                               </Button>
                             )}
                             <Button
                               variant="outline"
-                              size="sm"
+                              // size="sm"
                               onClick={() => openDeleteConfirm(pair)}
                               disabled={loading}
                               className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                               title="Delete"
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </td>
