@@ -11,6 +11,7 @@ import RefreshButton from '../common/RefreshButton';
 import CopyButton from '../common/CopyButton';
 import { cipherEmail, obfuscateText, maskString } from '@/utils/security';
 import { DialogDescription } from '@radix-ui/react-dialog';
+import TableHeader from '../common/TableHeader';
 
 export const WithdrawalHistoryTable: React.FC = () => {
   const {
@@ -142,92 +143,95 @@ export const WithdrawalHistoryTable: React.FC = () => {
             </p>
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Withdrawal ID</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">User</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Amount</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Fee</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">To Address</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Status</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Created</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredWithdrawals.map((withdrawal) => (
-                <tr key={withdrawal.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center space-x-2">
-                      <code className="text-sm text-blue-300 bg-gray-700/50 px-2 py-1 rounded">
-                        {truncateId(withdrawal.id)}
-                      </code>
-                      {withdrawal.txHash && (
-                        <a
-                          href={getBlockExplorerUrl(withdrawal.txHash)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-gray-400 hover:text-blue-400 transition-colors"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="text-sm">
-                      <div className="text-white font-medium">
-                        {displayEmail(withdrawal.user?.email)}
+          <div className="h-full overflow-auto rounded-lg border border-gray-700/50">
+
+            <table className="w-full">
+              <TableHeader headers={[
+                'Withdrawal ID',
+                'User',
+                'Amount',
+                'Fee',
+                'To Address',
+                'Status',
+                'Created',
+                'Actions'
+              ]} />
+
+
+              <tbody>
+                {filteredWithdrawals.map((withdrawal) => (
+                  <tr key={withdrawal.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center space-x-2">
+                        <code className="text-sm text-blue-300 bg-gray-700/50 px-2 py-1 rounded">
+                          {truncateId(withdrawal.id)}
+                        </code>
+                        {withdrawal.txHash && (
+                          <a
+                            href={getBlockExplorerUrl(withdrawal.txHash)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-400 hover:text-blue-400 transition-colors"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
                       </div>
-                      {withdrawal.user?.username && (
-                        <div className="text-xs text-gray-400">
-                          @{displayText(withdrawal.user.username)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="text-sm">
+                        <div className="text-white font-medium">
+                          {displayEmail(withdrawal.user?.email)}
                         </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm font-mono text-red-300">
-                      {withdrawal.amount && !isNaN(parseFloat(withdrawal.amount))
-                        ? `-${parseFloat(withdrawal.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`
-                        : 'N/A'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-xs text-gray-300">
-                      {withdrawal.fee && !isNaN(parseFloat(withdrawal.fee))
-                        ? parseFloat(withdrawal.fee).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })
-                        : '0.00'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <code className="text-xs text-gray-300">
-                      {truncateAddress(withdrawal.toAddress)}
-                    </code>
-                  </td>
-                  <td className="py-3 px-4">
-                    <WithdrawalStatusBadge status={withdrawal.status} />
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-xs text-gray-400">
-                      {format(new Date(withdrawal.createdAt), 'MMM dd, yyyy HH:mm')}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <Button
-                      onClick={() => handleViewDetails(withdrawal.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-gray-400 hover:text-white"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        {withdrawal.user?.username && (
+                          <div className="text-xs text-gray-400">
+                            @{displayText(withdrawal.user.username)}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-mono text-red-300">
+                        {withdrawal.amount && !isNaN(parseFloat(withdrawal.amount))
+                          ? `-${parseFloat(withdrawal.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`
+                          : 'N/A'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-300">
+                        {withdrawal.fee && !isNaN(parseFloat(withdrawal.fee))
+                          ? parseFloat(withdrawal.fee).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })
+                          : '0.00'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <code className="text-xs text-gray-300">
+                        {truncateAddress(withdrawal.toAddress)}
+                      </code>
+                    </td>
+                    <td className="py-3 px-4">
+                      <WithdrawalStatusBadge status={withdrawal.status} />
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-400">
+                        {format(new Date(withdrawal.createdAt), 'MMM dd, yyyy HH:mm')}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <Button
+                        onClick={() => handleViewDetails(withdrawal.id)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-400 hover:text-white"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

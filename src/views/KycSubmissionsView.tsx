@@ -1,99 +1,100 @@
-import React, { useState, useEffect } from 'react'
-import { PageHeader } from '@/components/PageHeader'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import React, { useState, useEffect } from 'react';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/select';
 
-import { Search, RefreshCw, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, Eye } from 'lucide-react'
-import { kycSubmissionApi, type KycSubmission, type PaginatedKycSubmissionsResponse } from '@/services/kycSubmissionApi'
-import { KycDetailsDialog } from '@/components/KycDetailsDialog'
-import RefreshButton from '@/components/common/RefreshButton'
-import { cipherEmail, obfuscateName, obfuscateText } from '@/utils/security'
+import { Search, RefreshCw, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, AlertCircle, X, Eye } from 'lucide-react';
+import { kycSubmissionApi, type KycSubmission, type PaginatedKycSubmissionsResponse } from '@/services/kycSubmissionApi';
+import { KycDetailsDialog } from '@/components/KycDetailsDialog';
+import RefreshButton from '@/components/common/RefreshButton';
+import { cipherEmail, obfuscateName, obfuscateText } from '@/utils/security';
+import TableHeader from '@/components/common/TableHeader';
 
 const KycSubmissionsView: React.FC = () => {
-  const [kycSubmissions, setKycSubmissions] = useState<KycSubmission[]>([])
-  const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [searchInput, setSearchInput] = useState('') // For the input field
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [total, setTotal] = useState(0)
-  const pageSize = 10
+  const [kycSubmissions, setKycSubmissions] = useState<KycSubmission[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState(''); // For the input field
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 10;
 
   // KYC details dialog state
-  const [selectedKycSubmission, setSelectedKycSubmission] = useState<KycSubmission | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [selectedKycSubmission, setSelectedKycSubmission] = useState<KycSubmission | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Debounce search input
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      setSearchTerm(searchInput)
-      setCurrentPage(1) // Reset to first page when searching
-    }, 500) // 500ms delay
+      setSearchTerm(searchInput);
+      setCurrentPage(1); // Reset to first page when searching
+    }, 500); // 500ms delay
 
-    return () => clearTimeout(debounceTimer)
-  }, [searchInput])
+    return () => clearTimeout(debounceTimer);
+  }, [searchInput]);
 
   const loadKycSubmissions = React.useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const response: PaginatedKycSubmissionsResponse = await kycSubmissionApi.getKycSubmissions({
         page: currentPage,
         limit: pageSize,
         search: searchTerm || undefined,
         status: statusFilter === 'all' ? undefined : statusFilter
-      })
+      });
 
-      setKycSubmissions(response.kycSubmissions)
-      setTotalPages(response.pagination.totalPages)
-      setTotal(response.pagination.totalCount)
+      setKycSubmissions(response.kycSubmissions);
+      setTotalPages(response.pagination.totalPages);
+      setTotal(response.pagination.totalCount);
     } catch (error: any) {
-      console.error('Failed to load KYC submissions:', error)
-      setKycSubmissions([])
-      setTotalPages(1)
-      setTotal(0)
+      console.error('Failed to load KYC submissions:', error);
+      setKycSubmissions([]);
+      setTotalPages(1);
+      setTotal(0);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [currentPage, pageSize, searchTerm, statusFilter])
+  }, [currentPage, pageSize, searchTerm, statusFilter]);
 
   useEffect(() => {
-    loadKycSubmissions()
-  }, [loadKycSubmissions])
+    loadKycSubmissions();
+  }, [loadKycSubmissions]);
 
   const handleSearch = (value: string) => {
-    setSearchInput(value) // Update input immediately for responsive UI
-  }
+    setSearchInput(value); // Update input immediately for responsive UI
+  };
 
   const handleStatusFilter = (value: string) => {
-    setStatusFilter(value)
-    setCurrentPage(1) // Reset to first page when filtering
-  }
+    setStatusFilter(value);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
 
   const clearAllFilters = () => {
-    setSearchInput('')
-    setSearchTerm('')
-    setStatusFilter('all')
-    setCurrentPage(1)
-  }
+    setSearchInput('');
+    setSearchTerm('');
+    setStatusFilter('all');
+    setCurrentPage(1);
+  };
 
-  const hasActiveFilters = searchInput !== '' || statusFilter !== 'all'
+  const hasActiveFilters = searchInput !== '' || statusFilter !== 'all';
 
   const handleUpdateStatus = async (submissionId: string, newStatus: string, rejectionReason?: string) => {
     try {
-      setLoading(true)
+      setLoading(true);
       const result = await kycSubmissionApi.updateKycSubmissionStatus(submissionId, {
         status: newStatus,
         reviewedBy: 'admin',
         rejectionReason: newStatus === 'REJECTED' ? rejectionReason : undefined
-      })
+      });
 
       // Update the submission in the local state
       setKycSubmissions(prevSubmissions =>
@@ -102,41 +103,41 @@ const KycSubmissionsView: React.FC = () => {
             ? { ...submission, status: result.status, reviewedAt: new Date().toISOString(), reviewedBy: 'admin' }
             : submission
         )
-      )
+      );
 
       // Optionally show a success message or toast
-      console.log(result.message)
+      console.log(result.message);
     } catch (error: any) {
-      console.error('Failed to update KYC submission status:', error)
+      console.error('Failed to update KYC submission status:', error);
       // Optionally show error message
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page)
+      setCurrentPage(page);
     }
-  }
+  };
 
   const handleKycRowClick = async (kycSubmission: KycSubmission) => {
     try {
-      setDialogOpen(true)
+      setDialogOpen(true);
 
       // Fetch detailed KYC data
-      const detailedKycSubmission = await kycSubmissionApi.getKycSubmissionById(kycSubmission.id)
-      setSelectedKycSubmission(detailedKycSubmission)
+      const detailedKycSubmission = await kycSubmissionApi.getKycSubmissionById(kycSubmission.id);
+      setSelectedKycSubmission(detailedKycSubmission);
     } catch (error: any) {
-      console.error('Failed to load KYC submission details:', error)
+      console.error('Failed to load KYC submission details:', error);
       // Show basic KYC data if detailed fetch fails
-      setSelectedKycSubmission(kycSubmission)
+      setSelectedKycSubmission(kycSubmission);
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString()
-  }
+    return new Date(dateString).toLocaleDateString();
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -144,32 +145,32 @@ const KycSubmissionsView: React.FC = () => {
       PROCESSING: { color: 'bg-blue-100 text-blue-800', icon: AlertCircle },
       APPROVED: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
       REJECTED: { color: 'bg-red-100 text-red-800', icon: XCircle }
-    }
+    };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING
-    const Icon = config.icon
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING;
+    const Icon = config.icon;
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
         <Icon className="h-3 w-3 mr-1" />
         {status}
       </span>
-    )
-  }
+    );
+  };
 
   const getLevelBadge = (level: number) => {
     const levelColors = {
       1: 'bg-gray-100 text-gray-800',
       2: 'bg-orange-100 text-orange-800',
       3: 'bg-purple-100 text-purple-800'
-    }
+    };
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${levelColors[level as keyof typeof levelColors] || levelColors[1]}`}>
         Level {level}
       </span>
-    )
-  }
+    );
+  };
 
   const getActionButtons = (submission: KycSubmission) => {
     if (submission.status === 'PENDING' || submission.status === 'PROCESSING') {
@@ -196,15 +197,15 @@ const KycSubmissionsView: React.FC = () => {
             Reject
           </Button>
         </>
-      )
+      );
     }
 
     return (
       <span className="text-sm text-gray-400">
         {submission.reviewedAt ? `Reviewed ${formatDate(submission.reviewedAt)}` : 'No actions available'}
       </span>
-    )
-  }
+    );
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -274,66 +275,68 @@ const KycSubmissionsView: React.FC = () => {
                 <p className="text-gray-400">No KYC submissions found</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">User</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Level</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Status</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Personal Info</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Country</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">ID Type</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Submitted</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {kycSubmissions.map((submission) => (
-                    <tr key={submission.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium text-white">{submission.user.username}</span>
-                          <span className="text-sm text-gray-400">{cipherEmail(submission.user.email)}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        {getLevelBadge(submission.level)}
-                      </td>
-                      <td className="py-3 px-4">
-                        {getStatusBadge(submission.status)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium text-gray-300">{obfuscateName(`${submission.firstName} ${submission.lastName}`)}</span>
-                          <span className="text-sm text-gray-400">{obfuscateText(submission.idNumber)}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-gray-300">
-                        {obfuscateText(submission.nationality)}
-                      </td>
-                      <td className="py-3 px-4 text-gray-300">
-                        {submission.idType.toUpperCase()}
-                      </td>
-                      <td className="py-3 px-4 text-gray-400">
-                        {formatDate(submission.submittedAt)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => handleKycRowClick(submission)}
-                            variant="ghost"
-                            size="sm"
-                            className="text-gray-400 hover:text-white"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          {getActionButtons(submission)}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="h-full overflow-auto rounded-lg border border-gray-700/50">
+
+                <table className="w-full">
+                  <TableHeader headers={[
+                    'User',
+                    'Level',
+                    'Status',
+                    'Personal Info',
+                    'Country',
+                    'ID Type',
+                    'Submitted',
+                    'Actions'
+                  ]} />
+
+                  <tbody>
+                    {kycSubmissions.map((submission) => (
+                      <tr key={submission.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
+                        <td className="py-3 px-4">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-white">{submission.user.username}</span>
+                            <span className="text-sm text-gray-400">{cipherEmail(submission.user.email)}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          {getLevelBadge(submission.level)}
+                        </td>
+                        <td className="py-3 px-4">
+                          {getStatusBadge(submission.status)}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-300">{obfuscateName(`${submission.firstName} ${submission.lastName}`)}</span>
+                            <span className="text-sm text-gray-400">{obfuscateText(submission.idNumber)}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-gray-300">
+                          {obfuscateText(submission.nationality)}
+                        </td>
+                        <td className="py-3 px-4 text-gray-300">
+                          {submission.idType.toUpperCase()}
+                        </td>
+                        <td className="py-3 px-4 text-gray-400">
+                          {formatDate(submission.submittedAt)}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleKycRowClick(submission)}
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-400 hover:text-white"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {getActionButtons(submission)}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
@@ -358,13 +361,13 @@ const KycSubmissionsView: React.FC = () => {
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter(page => {
                     // Show first page, last page, current page, and pages around current
-                    if (page === 1 || page === totalPages) return true
-                    if (Math.abs(page - currentPage) <= 1) return true
-                    return false
+                    if (page === 1 || page === totalPages) return true;
+                    if (Math.abs(page - currentPage) <= 1) return true;
+                    return false;
                   })
                   .map((page, index, pages) => {
                     // Add ellipsis if there's a gap
-                    const showEllipsis = index > 0 && page - pages[index - 1] > 1
+                    const showEllipsis = index > 0 && page - pages[index - 1] > 1;
 
                     return (
                       <React.Fragment key={page}>
@@ -379,7 +382,7 @@ const KycSubmissionsView: React.FC = () => {
                           {page}
                         </Button>
                       </React.Fragment>
-                    )
+                    );
                   })}
 
                 <Button
@@ -404,7 +407,7 @@ const KycSubmissionsView: React.FC = () => {
         onOpenChange={setDialogOpen}
       />
     </div>
-  )
-}
+  );
+};
 
-export default KycSubmissionsView
+export default KycSubmissionsView;

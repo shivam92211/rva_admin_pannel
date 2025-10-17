@@ -11,6 +11,7 @@ import RefreshButton from '../common/RefreshButton';
 import CopyButton from '../common/CopyButton';
 import { cipherEmail, obfuscateText, maskString } from '@/utils/security';
 import { DialogDescription } from '@radix-ui/react-dialog';
+import TableHeader from '../common/TableHeader';
 
 export const DepositHistoryTable: React.FC = () => {
   const {
@@ -171,30 +172,29 @@ export const DepositHistoryTable: React.FC = () => {
             </p>
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Wallet TX ID</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Address</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">User</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Currency</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Amount</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Chain</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Status</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Created</th>
-                <th className="text-left py-3 px-4 text-gray-300 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDeposits.map((deposit) => (
-                <tr key={deposit.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center space-x-2">
-                      <code className="text-sm text-blue-300 bg-gray-700/50 px-2 py-1 rounded">
-                        {truncateHash(deposit.walletTxId || deposit.id)}
-                      </code>
-                      {deposit.walletTxId && <CopyButton text={deposit.walletTxId} />}
-                      {/* {deposit.walletTxId && (
+          <div className="h-full overflow-auto rounded-lg border border-gray-700/50">
+            <table className="w-full">
+              <TableHeader headers={[
+                'Wallet TX ID',
+                'Address',
+                'User',
+                'Currency',
+                'Amount',
+                'Chain',
+                'Status',
+                'Created',
+                'Actions'
+              ]} />
+              <tbody>
+                {filteredDeposits.map((deposit) => (
+                  <tr key={deposit.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center space-x-2">
+                        <code className="text-sm text-blue-300 bg-gray-700/50 px-2 py-1 rounded">
+                          {truncateHash(deposit.walletTxId || deposit.id)}
+                        </code>
+                        {deposit.walletTxId && <CopyButton text={deposit.walletTxId} />}
+                        {/* {deposit.walletTxId && (
                         <a
                           href={getBlockExplorerUrl(deposit.chain, deposit.walletTxId)}
                           target="_blank"
@@ -204,77 +204,78 @@ export const DepositHistoryTable: React.FC = () => {
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       )} */}
-                    </div>
-                  </td>
-
-                  {/* Address */}
-                  <td className="py-3 px-4">
-                    <div className="flex items-center space-x-2">
-                      <code className="text-sm text-gray-300 bg-gray-700/50 px-2 py-1 rounded">
-                        {truncateAddress(deposit.address)}
-                      </code>
-                      {deposit.address && (
-                        <CopyButton text={deposit.address} />
-                      )}
-                    </div>
-                  </td>
-
-                  <td className="py-3 px-4">
-                    <div className="text-sm">
-                      <div className="text-white font-medium">
-                        {obfuscateText(deposit.user?.id)}
                       </div>
-                      {deposit.user?.username && (
-                        <div className="text-xs text-gray-400">
-                          @{obfuscateText(deposit.user.username)}
+                    </td>
+
+                    {/* Address */}
+                    <td className="py-3 px-4">
+                      <div className="flex items-center space-x-2">
+                        <code className="text-sm text-gray-300 bg-gray-700/50 px-2 py-1 rounded">
+                          {truncateAddress(deposit.address)}
+                        </code>
+                        {deposit.address && (
+                          <CopyButton text={deposit.address} />
+                        )}
+                      </div>
+                    </td>
+
+                    <td className="py-3 px-4">
+                      <div className="text-sm">
+                        <div className="text-white font-medium">
+                          {obfuscateText(deposit.user?.id)}
                         </div>
-                      )}
-                    </div>
-                  </td>
+                        {deposit.user?.username && (
+                          <div className="text-xs text-gray-400">
+                            @{obfuscateText(deposit.user.username)}
+                          </div>
+                        )}
+                      </div>
+                    </td>
 
-                  <td className="py-3 px-4">
-                    <span className="text-sm font-medium text-white">
-                      {deposit.currency}
-                    </span>
-                  </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-white">
+                        {deposit.currency}
+                      </span>
+                    </td>
 
-                  <td className="py-3 px-4">
-                    <span className="text-sm font-mono text-green-300">
-                      {deposit.amount && !isNaN(parseFloat(deposit.amount))
-                        ? parseFloat(deposit.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })
-                        : 'N/A'}
-                    </span>
-                  </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-mono text-green-300">
+                        {deposit.amount && !isNaN(parseFloat(deposit.amount))
+                          ? parseFloat(deposit.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })
+                          : 'N/A'}
+                      </span>
+                    </td>
 
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-300 bg-gray-700/30 px-2 py-1 rounded">
-                      {deposit.chain}
-                    </span>
-                  </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm text-gray-300 bg-gray-700/30 px-2 py-1 rounded">
+                        {deposit.chain}
+                      </span>
+                    </td>
 
-                  <td className="py-3 px-4">
-                    <DepositStatusBadge status={deposit.status} />
-                  </td>
+                    <td className="py-3 px-4">
+                      <DepositStatusBadge status={deposit.status} />
+                    </td>
 
-                  <td className="py-3 px-4">
-                    <span className="text-xs text-gray-400">
-                      {formatTimestamp(deposit.createdAt)}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <Button
-                      onClick={() => handleViewDetails(deposit.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-gray-400 hover:text-white"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-400">
+                        {formatTimestamp(deposit.createdAt)}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <Button
+                        onClick={() => handleViewDetails(deposit.id)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-400 hover:text-white"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

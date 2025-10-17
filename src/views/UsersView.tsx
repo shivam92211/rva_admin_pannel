@@ -23,6 +23,7 @@ import { UserDetailsDialog } from '@/components/UserDetailsDialog';
 import RefreshButton from '@/components/common/RefreshButton';
 import { cipherEmail, maskString } from '@/utils/security';
 import { useSnackbarMsg } from '@/hooks/snackbar';
+import TableHeader from '@/components/common/TableHeader';
 
 const UsersView: React.FC = () => {
   const [, setSnackbarMsg] = useSnackbarMsg();
@@ -94,9 +95,9 @@ const UsersView: React.FC = () => {
     setStatusFilter('all');
     setWhitelistFilter('all');
     setCurrentPage(1);
-    setSnackbarMsg({ 
-      msg: 'All filters cleared', 
-      type: 'success' 
+    setSnackbarMsg({
+      msg: 'All filters cleared',
+      type: 'success'
     });
   };
 
@@ -316,108 +317,109 @@ const UsersView: React.FC = () => {
                 <p className="text-gray-400">No users found</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Username</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Email</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Name</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Phone</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Status</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Whitelist</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Created</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
-                      <td className="py-3 px-4 font-medium text-white">{user.username}</td>
-                      <td className="py-3 px-4 text-gray-300">{cipherEmail(user.email)}</td>
-                      <td className="py-3 px-4 text-gray-300">
-                        {maskString(user.firstName || user.lastName
-                          ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-                          : '—')
-                        }
-                      </td>
-                      <td className="py-3 px-4 text-gray-300">
-                        {user.phoneNumber || user.phone || '—'}
-                      </td>
-                      <td className="py-3 px-4">
-                        {getStatusBadge(user.isActive)}
-                      </td>
-                      <td className="py-3 px-4">
-                        {getWhitelistBadge(user.withdrawalWhitelist)}
-                      </td>
-                      <td className="py-3 px-4 text-gray-400">
-                        {formatDate(user.createdAt)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => handleUserRowClick(user)}
-                            variant="ghost"
-                            size="sm"
-                            className="text-gray-400 hover:text-white"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleUserActionClick(
-                              user.isActive ? 'deactivate' : 'activate',
-                              user
-                            )}
-                            disabled={loading}
-                            className={`flex items-center gap-2 ${user.isActive
-                              ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                              : 'hover:bg-green-50 hover:text-green-600 hover:border-green-200'
-                              }`}
-                          >
-                            {user.isActive ? (
-                              <>
-                                <PowerOff className="h-4 w-4" />
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <Power className="h-4 w-4" />
-                                Activate
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleUserActionClick(
-                              user.withdrawalWhitelist ? 'removeWhitelist' : 'whitelist',
-                              user
-                            )}
-                            disabled={loading}
-                            className={`flex items-center gap-2 ${user.withdrawalWhitelist
-                              ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                              : 'hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
-                              }`}
-                          >
-                            {user.withdrawalWhitelist ? (
-                              <>
-                                <Shield className="h-4 w-4" />
-                                Remove
-                              </>
-                            ) : (
-                              <>
-                                <ShieldCheck className="h-4 w-4" />
-                                Whitelist
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="h-full overflow-auto rounded-lg border border-gray-700/50">
+                <table className="w-full">
+                  <TableHeader headers={[
+                    'Username',
+                    'Email',
+                    'Name',
+                    'Phone',
+                    'Status',
+                    'Whitelist',
+                    'Created',
+                    'Actions'
+                  ]} />
+
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
+                        <td className="py-3 px-4 font-medium text-white">{user.username}</td>
+                        <td className="py-3 px-4 text-gray-300">{cipherEmail(user.email)}</td>
+                        <td className="py-3 px-4 text-gray-300">
+                          {maskString(user.firstName || user.lastName
+                            ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                            : '—')
+                          }
+                        </td>
+                        <td className="py-3 px-4 text-gray-300">
+                          {user.phoneNumber || user.phone || '—'}
+                        </td>
+                        <td className="py-3 px-4">
+                          {getStatusBadge(user.isActive)}
+                        </td>
+                        <td className="py-3 px-4">
+                          {getWhitelistBadge(user.withdrawalWhitelist)}
+                        </td>
+                        <td className="py-3 px-4 text-gray-400">
+                          {formatDate(user.createdAt)}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleUserRowClick(user)}
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-400 hover:text-white"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUserActionClick(
+                                user.isActive ? 'deactivate' : 'activate',
+                                user
+                              )}
+                              disabled={loading}
+                              className={`flex items-center gap-2 ${user.isActive
+                                ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                                : 'hover:bg-green-50 hover:text-green-600 hover:border-green-200'
+                                }`}
+                            >
+                              {user.isActive ? (
+                                <>
+                                  <PowerOff className="h-4 w-4" />
+                                  Deactivate
+                                </>
+                              ) : (
+                                <>
+                                  <Power className="h-4 w-4" />
+                                  Activate
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUserActionClick(
+                                user.withdrawalWhitelist ? 'removeWhitelist' : 'whitelist',
+                                user
+                              )}
+                              disabled={loading}
+                              className={`flex items-center gap-2 ${user.withdrawalWhitelist
+                                ? 'hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                                : 'hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
+                                }`}
+                            >
+                              {user.withdrawalWhitelist ? (
+                                <>
+                                  <Shield className="h-4 w-4" />
+                                  Remove
+                                </>
+                              ) : (
+                                <>
+                                  <ShieldCheck className="h-4 w-4" />
+                                  Whitelist
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
