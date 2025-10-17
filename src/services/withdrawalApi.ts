@@ -45,8 +45,8 @@ export interface KucoinWithdrawalHistory {
   amount: string;
   fee: string;
   walletTxId: string | null;
-  createdAt: string | number;
-  updatedAt: string | number;
+  createdAt: string;
+  updatedAt: string;
   remark: string | null;
   withdrawalId: string | null;
   internalWithdrawalId: string | null;
@@ -133,6 +133,11 @@ class WithdrawalAPI {
 
   async getKucoinWithdrawalHistoryById(id: string): Promise<KucoinWithdrawalHistory> {
     const response = await this.client.get<KucoinWithdrawalHistory>(`/api/v1/withdrawals/history/${id}`);
+    return response.data;
+  }
+
+  async triggerWithdrawalForId(id: string): Promise<{ message: string; }> {
+    const response = await this.client.post<{ message: string; }>(`/api/v1/withdrawals/${id}/process`);
     return response.data;
   }
 }

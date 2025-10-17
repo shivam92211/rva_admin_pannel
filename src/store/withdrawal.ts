@@ -108,7 +108,7 @@ export const useWithdrawalStore = create<WithdrawalStore>((set) => ({
     set({ isLoading: true, error: null })
 
     try {
-      const withdrawal = await withdrawalApi.getKucoinWithdrawalById(id)
+      const withdrawal = await withdrawalApi.getKucoinWithdrawalHistoryById(id)
       set({
         selectedKucoinWithdrawal: withdrawal,
         isLoading: false,

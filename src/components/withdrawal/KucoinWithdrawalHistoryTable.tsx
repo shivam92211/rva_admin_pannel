@@ -1,14 +1,14 @@
-import React, { useState } from 'react'
-import { useWithdrawalStore } from '@/store/withdrawal'
-import { WithdrawalStatusBadge } from './WithdrawalStatusBadge'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Search, RefreshCw, Eye, EyeOff, ExternalLink } from 'lucide-react'
-import { format } from 'date-fns'
-import CopyButton from '../common/CopyButton'
-import { cipherEmail, obfuscateText, maskString } from '@/utils/security'
+import React, { useState } from 'react';
+import { useWithdrawalStore } from '@/store/withdrawal';
+import { WithdrawalStatusBadge } from './WithdrawalStatusBadge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Search, RefreshCw, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { format } from 'date-fns';
+import CopyButton from '../common/CopyButton';
+import { cipherEmail, obfuscateText, maskString } from '@/utils/security';
 
 export const KucoinWithdrawalHistoryTable: React.FC = () => {
   const {
@@ -18,11 +18,11 @@ export const KucoinWithdrawalHistoryTable: React.FC = () => {
     fetchKucoinWithdrawals,
     fetchKucoinWithdrawalDetail,
     clearSelectedKucoinWithdrawal
-  } = useWithdrawalStore()
+  } = useWithdrawalStore();
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [showSensitiveData, setShowSensitiveData] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showSensitiveData, setShowSensitiveData] = useState(false);
 
   // Display helper functions for GDPR compliance
   const displayEmail = (email: string | undefined | null) => {
@@ -48,37 +48,37 @@ export const KucoinWithdrawalHistoryTable: React.FC = () => {
       withdrawal.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (withdrawal.walletTxId && withdrawal.walletTxId.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (withdrawal.user?.email && withdrawal.user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (withdrawal.user?.username && withdrawal.user.username.toLowerCase().includes(searchTerm.toLowerCase()))
+      (withdrawal.user?.username && withdrawal.user.username.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesStatus = statusFilter === 'all' || withdrawal.status === statusFilter
+    const matchesStatus = statusFilter === 'all' || withdrawal.status === statusFilter;
 
-    return matchesSearch && matchesStatus
-  })
+    return matchesSearch && matchesStatus;
+  });
 
   const handleRefresh = () => {
-    fetchKucoinWithdrawals()
-  }
+    fetchKucoinWithdrawals();
+  };
 
   const handleViewDetails = (id: string) => {
-    fetchKucoinWithdrawalDetail(id)
-  }
+    fetchKucoinWithdrawalDetail(id);
+  };
 
   const truncateId = (id: string) => {
-    if (!id) return 'N/A'
-    return `${id.slice(0, 8)}...${id.slice(-4)}`
-  }
+    if (!id) return 'N/A';
+    return `${id.slice(0, 8)}...${id.slice(-4)}`;
+  };
 
   const truncateAddress = (address: string) => {
-    if (!address) return 'N/A'
-    if (address.length <= 20) return address
-    return `${address.slice(0, 8)}...${address.slice(-8)}`
-  }
+    if (!address) return 'N/A';
+    if (address.length <= 20) return address;
+    return `${address.slice(0, 8)}...${address.slice(-8)}`;
+  };
 
   const getBlockExplorerUrl = (txHash: string) => {
-    if (!txHash) return '#'
+    if (!txHash) return '#';
     // Default to Etherscan - could be enhanced based on chain detection
-    return `https://etherscan.io/tx/${txHash}`
-  }
+    return `https://etherscan.io/tx/${txHash}`;
+  };
 
   if (isLoading && kucoinWithdrawals.length === 0) {
     return (
@@ -88,7 +88,7 @@ export const KucoinWithdrawalHistoryTable: React.FC = () => {
           <span className="ml-2 text-gray-400">Loading KuCoin withdrawal history...</span>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -215,7 +215,7 @@ export const KucoinWithdrawalHistoryTable: React.FC = () => {
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-xs text-gray-400">
-                      {format(new Date(withdrawal.createdAt), 'MMM dd, yyyy HH:mm')}
+                      {format(new Date(parseInt(withdrawal.createdAt) || 0), 'MMM dd, yyyy HH:mm')}
                     </span>
                   </td>
                   <td className="py-3 px-4">
@@ -335,13 +335,14 @@ export const KucoinWithdrawalHistoryTable: React.FC = () => {
                 )}
                 <div>
                   <label className="text-sm font-medium text-gray-400">Created At</label>
-                  <p className="text-sm">{format(new Date(selectedKucoinWithdrawal.createdAt), 'MMM dd, yyyy HH:mm:ss')}</p>
+                  <p className="text-sm">{format(new Date(parseInt(selectedKucoinWithdrawal.createdAt)), 'MMM dd, yyyy HH:mm:ss')}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-400">Updated At</label>
-                  <p className="text-sm">{format(new Date(selectedKucoinWithdrawal.updatedAt), 'MMM dd, yyyy HH:mm:ss')}</p>
+                  <p className="text-sm">{format(new Date(parseInt(selectedKucoinWithdrawal.updatedAt)), 'MMM dd, yyyy HH:mm:ss')}</p>
                 </div>
               </div>
+
               {selectedKucoinWithdrawal.walletTxId && (
                 <div className="flex justify-between pt-4 border-t">
                   <a
@@ -360,5 +361,5 @@ export const KucoinWithdrawalHistoryTable: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};

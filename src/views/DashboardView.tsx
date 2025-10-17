@@ -14,6 +14,8 @@ import {
   Legend,
 } from 'chart.js'
 import { dashboardApi, type DashboardStats, type ChartData } from '@/services/dashboardApi'
+import RefreshButton from '@/components/common/RefreshButton'
+import { useSnackbarMsg } from '@/hooks/snackbar'
 
 ChartJS.register(
   CategoryScale,
@@ -26,6 +28,7 @@ ChartJS.register(
 )
 
 const DashboardView: React.FC = () => {
+  const [, setSnackbarMsg] = useSnackbarMsg()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [activityData, setActivityData] = useState<ChartData[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -389,7 +392,23 @@ const DashboardView: React.FC = () => {
       <PageHeader
         title="Dashboard"
         description="Overview of your RVA platform statistics"
-      />
+      >
+        <div className="flex gap-2">
+          <RefreshButton onClick={() => {
+            loadDashboardData().then(() => {
+              setSnackbarMsg({
+                msg: 'Dashboard data refreshed successfully',
+                type: 'success'
+              });
+            }).catch(() => {
+              setSnackbarMsg({
+                msg: 'Failed to refresh dashboard data',
+                type: 'error'
+              });
+            });
+          }} />
+        </div>
+      </PageHeader>
       <div className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-6">
 
