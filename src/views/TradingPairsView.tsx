@@ -518,9 +518,10 @@ const TradingPairsView: React.FC = () => {
                               size="sm"
                               onClick={() => handleBotToggleClick(pair)}
                               disabled={botLoading.has(pair.symbol)}
-                              className={`h-8 px-3 font-medium ${activeBotPairs.has(pair.symbol)
-                                ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
-                                : "border-green-200 text-green-600 hover:bg-green-100 hover:text-green-950 hover:border-green-300"
+                              className={`h-8 px-3 font-medium group ${activeBotPairs.has(pair.symbol)
+                                ? `border-green-200 border bg-gray-900 text-green-600 hover:bg-red-600 hover:text-white hover:border-red-600`
+                                : `border-red-200 text-red-600 hover:bg-green-600
+                                 hover:text-white hover:border-green-600`
                                 }`}
                               title={activeBotPairs.has(pair.symbol) ? "Disable Market Bot" : "Enable Market Bot"}
                             >
@@ -530,13 +531,17 @@ const TradingPairsView: React.FC = () => {
                                 <>
                                   {activeBotPairs.has(pair.symbol) ? (
                                     <>
-                                      <Square className="h-3 w-3 mr-1" />
-                                      OFF
+                                      <Square className="h-3 w-3 mr-1 group-hover:hidden" />
+                                      <Play className="h-3 w-3 mr-1 hidden group-hover:inline" />
+                                      <span className="group-hover:hidden">ON</span>
+                                      <span className="hidden group-hover:inline">OFF</span>
                                     </>
                                   ) : (
                                     <>
-                                      <Play className="h-3 w-3 mr-1" />
-                                      ON
+                                      <Play className="h-3 w-3 mr-1 group-hover:hidden" />
+                                      <Square className="h-3 w-3 mr-1 hidden group-hover:inline" />
+                                      <span className="group-hover:hidden">OFF</span>
+                                      <span className="hidden group-hover:inline">ON</span>
                                     </>
                                   )}
                                 </>
