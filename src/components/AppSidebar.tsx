@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   Home,
   Users,
@@ -29,6 +30,15 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { cipherEmail } from "@/utils/security";
 
 const navMain = [
@@ -84,10 +94,20 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { open } = useSidebar();
   const { admin, logout } = useAuthStore();
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleConfirmLogout = async () => {
     await logout();
     navigate('/login');
+    setShowLogoutDialog(false);
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutDialog(false);
   };
 
   return (
@@ -144,7 +164,7 @@ export function AppSidebar() {
         <SidebarMenu className="w-full">
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={handleLogout}
+              onClick={handleLogoutClick}
               tooltip={!open ? "Logout" : undefined}
               className="text-red-600 hover:text-red-700 w-full hover:bg-red-50"
             >
@@ -170,6 +190,26 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Logout</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to logout? You will need to sign in again to access the admin panel.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelLogout}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmLogout}>
+              Logout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sidebar>
   );
 }
