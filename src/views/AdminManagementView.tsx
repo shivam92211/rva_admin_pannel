@@ -31,6 +31,7 @@ import {
   X,
   Shield,
   Activity,
+  Info,
 } from 'lucide-react';
 import {
   adminManagementApi,
@@ -95,6 +96,10 @@ const AdminManagementView: React.FC = () => {
   // Activity summary state
   const [activitySummary, setActivitySummary] = useState<AdminActivitySummary | null>(null);
   const [activityDays, setActivityDays] = useState(7);
+
+  // Log details dialog state
+  const [logDetailsDialogOpen, setLogDetailsDialogOpen] = useState(false);
+  const [selectedLogDetails, setSelectedLogDetails] = useState<any>(null);
 
   // Form states
   const [createForm, setCreateForm] = useState<CreateAdminDto>({
@@ -525,6 +530,62 @@ const AdminManagementView: React.FC = () => {
   // Get unique actions for filter
   const uniqueActions = [...new Set(activityLogs.map((log) => log.action))].sort();
 
+  // Render JSON details in tree format
+  const renderJsonTree = (obj: any, depth: number = 0): JSX.Element => {
+    if (obj === null || obj === undefined) {
+      return <span className="text-gray-500">null</span>;
+    }
+
+    if (typeof obj !== 'object') {
+      return (
+        <span className={`${
+          typeof obj === 'string' ? 'text-green-400' :
+          typeof obj === 'number' ? 'text-blue-400' :
+          typeof obj === 'boolean' ? 'text-purple-400' :
+          'text-gray-300'
+        }`}>
+          {typeof obj === 'string' ? `"${obj}"` : String(obj)}
+        </span>
+      );
+    }
+
+    if (Array.isArray(obj)) {
+      if (obj.length === 0) {
+        return <span className="text-gray-500">[]</span>;
+      }
+      return (
+        <div className="ml-4">
+          {obj.map((item, index) => (
+            <div key={index} className="my-1">
+              <span className="text-gray-500">[{index}]:</span>{' '}
+              {renderJsonTree(item, depth + 1)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    const entries = Object.entries(obj);
+    if (entries.length === 0) {
+      return <span className="text-gray-500">{'{}'}</span>;
+    }
+
+    return (
+      <div className={depth > 0 ? 'ml-4' : ''}>
+        {entries.map(([key, value]) => (
+          <div key={key} className="my-1">
+            <Label className="text-yellow-400 font-medium">{key}:</Label>{' '}
+            {typeof value === 'object' && value !== null ? (
+              <div className="ml-4">{renderJsonTree(value, depth + 1)}</div>
+            ) : (
+              renderJsonTree(value, depth + 1)
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -908,14 +969,14 @@ const AdminManagementView: React.FC = () => {
                     type="date"
                     value={logsStartDate}
                     onChange={(e) => setLogsStartDate(e.target.value)}
-                    className="w-40"
+                    className="w-40 cursor-pointer"
                     placeholder="Start Date"
                   />
                   <Input
                     type="date"
                     value={logsEndDate}
                     onChange={(e) => setLogsEndDate(e.target.value)}
-                    className="w-40"
+                    className="w-40 cursor-pointer"
                     placeholder="End Date"
                   />
                 </div>
@@ -989,8 +1050,24 @@ const AdminManagementView: React.FC = () => {
                             <td className="py-3 px-4 text-gray-300 font-mono text-sm">
                               {log.ipAddress}
                             </td>
-                            <td className="py-3 px-4 text-gray-400 text-xs max-w-xs truncate">
-                              {log.details ? JSON.stringify(log.details).substring(0, 50) + '...' : 'N/A'}
+                            <td className="py-3 px-4 text-gray-400 text-xs">
+                              {log.details ? (
+                                <button
+                                  onClick={() => {
+                                    setSelectedLogDetails(log.details);
+                                    setLogDetailsDialogOpen(true);
+                                  }}
+                                  className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
+                                  title="View details"
+                                >
+                                  <Info className="h-4 w-4" />
+                                  <span className="max-w-xs truncate">
+                                    {JSON.stringify(log.details).substring(0, 50)}...
+                                  </span>
+                                </button>
+                              ) : (
+                                'N/A'
+                              )}
                             </td>
                           </tr>
                         ))
@@ -1605,6 +1682,41 @@ const AdminManagementView: React.FC = () => {
                 setActivityDialogOpen(false);
                 setActivitySummary(null);
                 setSelectedAdmin(null);
+              }}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Log Details Dialog */}
+      <Dialog open={logDetailsDialogOpen} onOpenChange={setLogDetailsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5" />
+              Activity Log Details
+            </DialogTitle>
+            <DialogDescription>
+              Detailed information about this activity log entry
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 overflow-y-auto max-h-[60vh]">
+            {selectedLogDetails ? (
+              <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm">
+                {renderJsonTree(selectedLogDetails)}
+              </div>
+            ) : (
+              <div className="text-center text-gray-400">No details available</div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setLogDetailsDialogOpen(false);
+                setSelectedLogDetails(null);
               }}
             >
               Close
