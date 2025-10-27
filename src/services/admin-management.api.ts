@@ -114,6 +114,38 @@ export interface GetAdminLogsParams {
   limit?: number;
 }
 
+export interface FilteredAdminLogsParams {
+  adminId?: string;
+  action?: string;
+  actions?: string[];
+  resourceId?: string;
+  ipAddress?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: 'createdAt' | 'action' | 'adminId';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface AdminLogStatistics {
+  totalLogs: number;
+  actionCounts: Record<string, number>;
+  actionsByDate: Record<string, Record<string, number>>;
+  uniqueActions: number;
+}
+
+export interface AdminActivitySummary {
+  adminId: string;
+  period: string;
+  totalActions: number;
+  actionCounts: Record<string, number>;
+  uniqueIPAddresses: number;
+  dailyActivity: Record<string, number>;
+  mostActiveDay: [string, number] | null;
+}
+
 class AdminManagementAPI {
   private client: AxiosInstance;
 
@@ -275,6 +307,56 @@ class AdminManagementAPI {
     const response = await this.client.get<AdminLog[]>('/api/v1/admin/management/logs/recent', {
       params: { limit },
     });
+    return response.data;
+  }
+
+  /**
+   * Get filtered, sorted, and processed admin logs
+   */
+  async getFilteredAdminLogs(params: FilteredAdminLogsParams): Promise<AdminLogsResponse & { filters: FilteredAdminLogsParams }> {
+    const queryParams: any = { ...params };
+
+    // Convert actions array to comma-separated string
+    if (params.actions && Array.isArray(params.actions)) {
+      queryParams.actions = params.actions.join(',');
+    }
+
+    const response = await this.client.get('/api/v1/admin/management/logs/filtered', {
+      params: queryParams,
+    });
+    return response.data;
+  }
+
+  /**
+   * Get admin log statistics
+   */
+  async getAdminLogStatistics(params?: {
+    adminId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<AdminLogStatistics> {
+    const response = await this.client.get<AdminLogStatistics>(
+      '/api/v1/admin/management/logs/statistics',
+      {
+        params,
+      }
+    );
+    return response.data;
+  }
+
+  /**
+   * Get admin activity summary for a specific period
+   */
+  async getAdminActivitySummary(
+    adminId: string,
+    days?: number
+  ): Promise<AdminActivitySummary> {
+    const response = await this.client.get<AdminActivitySummary>(
+      `/api/v1/admin/management/logs/${adminId}/activity-summary`,
+      {
+        params: { days },
+      }
+    );
     return response.data;
   }
 }
