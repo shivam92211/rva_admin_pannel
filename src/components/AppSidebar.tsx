@@ -108,7 +108,8 @@ export function AppSidebar() {
 
   const handleConfirmLogout = async () => {
     await logout();
-    navigate('/login');
+    // navigate('/login');
+    window.location.href = "/login";
     setShowLogoutDialog(false);
   };
 

@@ -52,6 +52,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         requires2FA: false,
         pendingAdminId: null,
       });
+      window.location.reload();
     } catch (error: any) {
       set({
         isAuthenticated: false,
@@ -83,6 +84,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         requires2FA: false,
         pendingAdminId: null,
       });
+      window.location.reload();
     } catch (error: any) {
       set({
         isLoading: false,
