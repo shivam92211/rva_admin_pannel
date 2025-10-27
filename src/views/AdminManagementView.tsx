@@ -667,8 +667,8 @@ const AdminManagementView: React.FC = () => {
                       <SelectItem value="all">All Roles</SelectItem>
                       <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
                       <SelectItem value="ADMIN">Admin</SelectItem>
-                      <SelectItem value="MODERATOR">Moderator</SelectItem>
-                      <SelectItem value="SUPPORT">Support</SelectItem>
+                      {/* <SelectItem value="MODERATOR">Moderator</SelectItem>
+                      <SelectItem value="SUPPORT">Support</SelectItem> */}
                       <SelectItem value="READONLY">Read Only</SelectItem>
                     </SelectContent>
                   </Select>
@@ -1208,8 +1208,8 @@ const AdminManagementView: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="READONLY">Read Only</SelectItem>
-                    <SelectItem value="SUPPORT">Support</SelectItem>
-                    <SelectItem value="MODERATOR">Moderator</SelectItem>
+                    {/* <SelectItem value="SUPPORT">Support</SelectItem>
+                    <SelectItem value="MODERATOR">Moderator</SelectItem> */}
                     <SelectItem value="ADMIN">Admin</SelectItem>
                   </SelectContent>
                 </Select>
