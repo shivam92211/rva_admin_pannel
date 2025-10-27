@@ -14,6 +14,7 @@ import {
   UserCheck,
   FileText,
   ArrowRightLeft,
+  Shield,
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 
@@ -86,6 +87,11 @@ const navMain = [
     title: "Trading Pairs",
     url: "/trading-pairs",
     icon: ArrowRightLeft,
+  },
+  {
+    title: "Admin Management",
+    url: "/admin-management",
+    icon: Shield,
   },
 ];
 
