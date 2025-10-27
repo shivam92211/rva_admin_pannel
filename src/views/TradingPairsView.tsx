@@ -238,13 +238,15 @@ const TradingPairsView: React.FC = () => {
   };
 
   const handleDeleteTradingPair = async (symbol: string) => {
+    // Close dialog immediately
+    setDeleteConfirmOpen(false);
+    setTradingPairToDelete(null);
+
     try {
       setLoading(true);
       await cexAdminClient.deleteTradingPair(symbol);
       await loadTradingPairs();
       await loadActiveBotPairs(); // Refresh bot pairs in case the deleted pair was active
-      setDeleteConfirmOpen(false);
-      setTradingPairToDelete(null);
       setSnackbarMsg({
         msg: `Trading pair ${symbol} deleted successfully`,
         type: 'success'
@@ -275,6 +277,10 @@ const TradingPairsView: React.FC = () => {
 
     const { type, pair } = marketAction;
 
+    // Close dialog immediately
+    setMarketActionConfirmOpen(false);
+    setMarketAction(null);
+
     try {
       switch (type) {
         case 'activate':
@@ -287,9 +293,8 @@ const TradingPairsView: React.FC = () => {
           await handleSuspendMarket(pair.symbol);
           break;
       }
-    } finally {
-      setMarketActionConfirmOpen(false);
-      setMarketAction(null);
+    } catch (error) {
+      // Error handling is already done in individual handle functions
     }
   };
 
@@ -306,6 +311,11 @@ const TradingPairsView: React.FC = () => {
     if (!botAction) return;
 
     const { type, pair } = botAction;
+
+    // Close dialog immediately
+    setBotConfirmOpen(false);
+    setBotAction(null);
+
     setBotLoading(prev => new Set(prev).add(pair.symbol));
 
     try {
@@ -337,8 +347,6 @@ const TradingPairsView: React.FC = () => {
         newSet.delete(pair.symbol);
         return newSet;
       });
-      setBotConfirmOpen(false);
-      setBotAction(null);
     }
   };
 

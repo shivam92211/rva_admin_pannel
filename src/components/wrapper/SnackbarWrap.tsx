@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import SnackbarProvider, { useSnackbar } from 'react-simple-snackbar';
 
 const commonStyle = {
-  zIndex: 10000,
+  zIndex: 999999,
 };
 
 const getLightModeOptions = (type: string = 'info') => {

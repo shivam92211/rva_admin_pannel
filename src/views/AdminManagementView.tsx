@@ -301,14 +301,16 @@ const AdminManagementView: React.FC = () => {
       return;
     }
 
+    // Close dialog immediately
+    setCreateDialogOpen(false);
     setActionLoading(true);
+
     try {
       const response = await adminManagementApi.createAdmin(createForm);
       setSnackbarMsg({
         msg: response.message || 'Admin created successfully',
         type: 'success',
       });
-      setCreateDialogOpen(false);
       setCreateForm({
         name: '',
         email: '',
@@ -336,6 +338,9 @@ const AdminManagementView: React.FC = () => {
         msg: 'Please enter a new password',
         type: 'error',
       });
+      // Close dialog immediately
+      setPasswordDialogOpen(false);
+      setActionLoading(true);
       return;
     }
 
@@ -344,10 +349,16 @@ const AdminManagementView: React.FC = () => {
         msg: 'Password must be at least 8 characters long',
         type: 'error',
       });
+      // Close dialog immediately
+      setPasswordDialogOpen(false);
+      setActionLoading(true);
       return;
     }
 
+    // Close dialog immediately
+    setPasswordDialogOpen(false);
     setActionLoading(true);
+
     try {
       const response = await adminManagementApi.updatePassword(
         selectedAdmin.id,
@@ -357,7 +368,6 @@ const AdminManagementView: React.FC = () => {
         msg: response.message || 'Password updated successfully',
         type: 'success',
       });
-      setPasswordDialogOpen(false);
       setPasswordForm({ newPassword: '' });
       setSelectedAdmin(null);
     } catch (error: any) {
@@ -374,7 +384,10 @@ const AdminManagementView: React.FC = () => {
   const handleBlockAdmin = async () => {
     if (!selectedAdmin) return;
 
+    // Close dialog immediately
+    setBlockDialogOpen(false);
     setActionLoading(true);
+
     try {
       const response = await adminManagementApi.blockAdmin(selectedAdmin.id, {
         reason: blockReason,
@@ -383,7 +396,6 @@ const AdminManagementView: React.FC = () => {
         msg: response.message || 'Admin blocked successfully',
         type: 'success',
       });
-      setBlockDialogOpen(false);
       setBlockReason('');
       setSelectedAdmin(null);
       await loadAdmins();
@@ -421,7 +433,10 @@ const AdminManagementView: React.FC = () => {
   const handleDeleteAdmin = async () => {
     if (!selectedAdmin) return;
 
+    // Close dialog immediately
+    setDeleteDialogOpen(false);
     setActionLoading(true);
+
     try {
       const response = await adminManagementApi.deleteAdmin(selectedAdmin.id, {
         reason: deleteReason,
@@ -430,7 +445,6 @@ const AdminManagementView: React.FC = () => {
         msg: response.message || 'Admin deleted successfully',
         type: 'success',
       });
-      setDeleteDialogOpen(false);
       setDeleteReason('');
       setSelectedAdmin(null);
       await loadAdmins();
@@ -538,12 +552,11 @@ const AdminManagementView: React.FC = () => {
 
     if (typeof obj !== 'object') {
       return (
-        <span className={`${
-          typeof obj === 'string' ? 'text-green-400' :
-          typeof obj === 'number' ? 'text-blue-400' :
-          typeof obj === 'boolean' ? 'text-purple-400' :
-          'text-gray-300'
-        }`}>
+        <span className={`${typeof obj === 'string' ? 'text-green-400' :
+            typeof obj === 'number' ? 'text-blue-400' :
+              typeof obj === 'boolean' ? 'text-purple-400' :
+                'text-gray-300'
+          }`}>
           {typeof obj === 'string' ? `"${obj}"` : String(obj)}
         </span>
       );
@@ -618,22 +631,20 @@ const AdminManagementView: React.FC = () => {
           <div className="bg-gray-800 rounded-lg p-1 inline-flex space-x-1">
             <button
               onClick={() => setActiveTab('admins')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                activeTab === 'admins'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'admins'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
+                }`}
             >
               <Shield className="h-4 w-4" />
               Admin Users
             </button>
             <button
               onClick={() => setActiveTab('activity')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                activeTab === 'activity'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'activity'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
+                }`}
             >
               <Activity className="h-4 w-4" />
               Activity Logs
