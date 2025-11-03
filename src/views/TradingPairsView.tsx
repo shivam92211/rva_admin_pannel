@@ -695,14 +695,14 @@ const TradingPairsView: React.FC = () => {
             onCancel={() => setShowForm(false)}
           />
         </DialogContent>
-      </Dialog>;
+      </Dialog>
 
       {/* Trading Pair Details Dialog */}
       <TradingPairDetailsDialog
         tradingPair={selectedTradingPair}
         open={detailsDialogOpen}
         onOpenChange={setDetailsDialogOpen}
-      />;
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
@@ -728,7 +728,7 @@ const TradingPairsView: React.FC = () => {
             </Button>
           </div>
         </DialogContent>
-      </Dialog>;
+      </Dialog>
 
       {/* Bot Toggle Confirmation Dialog */}
       <Dialog open={botConfirmOpen} onOpenChange={setBotConfirmOpen}>
@@ -782,7 +782,7 @@ const TradingPairsView: React.FC = () => {
             </Button>
           </div>
         </DialogContent>
-      </Dialog>;
+      </Dialog>
 
       {/* Market Action Confirmation Dialog */}
       <Dialog open={marketActionConfirmOpen} onOpenChange={setMarketActionConfirmOpen}>

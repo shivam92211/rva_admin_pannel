@@ -15,6 +15,7 @@ const UsersView = React.lazy(() => import('../views/UsersView'))
 const KycSubmissionsView = React.lazy(() => import('../views/KycSubmissionsView'))
 const TradingPairsView = React.lazy(() => import('../views/TradingPairsView'))
 const AdminManagementView = React.lazy(() => import('../views/AdminManagementView'))
+const AdminBasicSettingsView = React.lazy(() => import('../views/AdminBasicSettingsView'))
 
 // Protected layout wrapper component
 const ProtectedLayoutWrapper: React.FC = () => {
@@ -83,6 +84,10 @@ export const router = createBrowserRouter([
       {
         path: '/admin-management',
         element: <AdminManagementView />
+      },
+      {
+        path: '/basic-settings',
+        element: <AdminBasicSettingsView />
       }
     ]
   }

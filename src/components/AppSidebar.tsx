@@ -15,6 +15,7 @@ import {
   FileText,
   ArrowRightLeft,
   Shield,
+  Settings,
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 
@@ -92,6 +93,11 @@ const navMain = [
     title: "Admin Management",
     url: "/admin-management",
     icon: Shield,
+  },
+  {
+    title: "Basic Settings",
+    url: "/basic-settings",
+    icon: Settings,
   },
 ];
 
