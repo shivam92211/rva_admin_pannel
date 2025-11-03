@@ -62,7 +62,7 @@ const AdminBasicSettingsView: React.FC = () => {
   const [termsDetailsDialogOpen, setTermsDetailsDialogOpen] = useState(false);
   const [termsDeleteDialogOpen, setTermsDeleteDialogOpen] = useState(false);
   const [selectedTerms, setSelectedTerms] = useState<TermsAndConditions | null>(null);
-  const [termsForm, setTermsForm] = useState<CreateTermsDto & { id?: string }>({
+  const [termsForm, setTermsForm] = useState<CreateTermsDto & { id?: string; }>({
     title: '',
     content: '',
     version: '',
@@ -78,7 +78,7 @@ const AdminBasicSettingsView: React.FC = () => {
   const [faqDetailsDialogOpen, setFaqDetailsDialogOpen] = useState(false);
   const [faqDeleteDialogOpen, setFaqDeleteDialogOpen] = useState(false);
   const [selectedFaq, setSelectedFaq] = useState<FaqItem | null>(null);
-  const [faqForm, setFaqForm] = useState<CreateFaqDto & { id?: string }>({
+  const [faqForm, setFaqForm] = useState<CreateFaqDto & { id?: string; }>({
     question: '',
     answer: '',
     category: '',
@@ -557,39 +557,36 @@ const AdminBasicSettingsView: React.FC = () => {
         </div>
       </PageHeader>
 
-      <div className="flex-grow overflow-hidden">
-        <div className="h-full overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-hidden">
+        <div className=" h-full overflow-y-auto p-6 space-y-6">
           {/* Tab Navigation */}
           <div className="bg-gray-800 rounded-lg p-1 inline-flex space-x-1">
             <button
               onClick={() => setActiveTab('terms')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                activeTab === 'terms'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'terms'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
             >
               <FileText className="h-4 w-4" />
               Terms & Conditions
             </button>
             <button
               onClick={() => setActiveTab('faqs')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                activeTab === 'faqs'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'faqs'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
             >
               <HelpCircle className="h-4 w-4" />
               FAQs
             </button>
             <button
               onClick={() => setActiveTab('contact-us')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                activeTab === 'contact-us'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'contact-us'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
             >
               <MessageSquare className="h-4 w-4" />
               Contact Us Submissions
@@ -598,7 +595,9 @@ const AdminBasicSettingsView: React.FC = () => {
 
           {/* Terms & Conditions Tab */}
           {activeTab === 'terms' && (
-            <div className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
+            <div
+              style={{ height: "calc(100vh - 180px)" }}
+              className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
               {/* Search */}
               <div className="flex items-center gap-4 mb-6 flex-shrink-0">
                 <div className="relative flex-1 max-w-sm">
@@ -717,7 +716,7 @@ const AdminBasicSettingsView: React.FC = () => {
 
           {/* FAQs Tab */}
           {activeTab === 'faqs' && (
-            <div className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
+            <div style={{ height: "calc(100vh - 180px)" }} className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
               {/* Filters */}
               <div className="flex items-center gap-4 mb-6 flex-shrink-0">
                 <div className="relative flex-1 max-w-sm">
@@ -854,7 +853,7 @@ const AdminBasicSettingsView: React.FC = () => {
 
           {/* Contact Us Tab */}
           {activeTab === 'contact-us' && (
-            <div className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
+            <div style={{ height: "calc(100vh - 180px)" }} className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
               {/* Filters */}
               <div className="flex items-center gap-4 mb-6 flex-shrink-0">
                 <div className="relative flex-1 max-w-sm">
@@ -969,6 +968,8 @@ const AdminBasicSettingsView: React.FC = () => {
               </div>
             </div>
           )}
+
+
         </div>
       </div>
 
@@ -1458,7 +1459,8 @@ const AdminBasicSettingsView: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
+
+            {/* <div className="grid gap-2">
               <Label htmlFor="response">Response</Label>
               <Textarea
                 id="response"
@@ -1469,8 +1471,10 @@ const AdminBasicSettingsView: React.FC = () => {
                 placeholder="Enter your response to the user..."
                 rows={8}
               />
-            </div>
+            </div> */}
+
           </div>
+
           <DialogFooter>
             <Button
               variant="outline"

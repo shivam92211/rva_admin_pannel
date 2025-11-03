@@ -553,9 +553,9 @@ const AdminManagementView: React.FC = () => {
     if (typeof obj !== 'object') {
       return (
         <span className={`${typeof obj === 'string' ? 'text-green-400' :
-            typeof obj === 'number' ? 'text-blue-400' :
-              typeof obj === 'boolean' ? 'text-purple-400' :
-                'text-gray-300'
+          typeof obj === 'number' ? 'text-blue-400' :
+            typeof obj === 'boolean' ? 'text-purple-400' :
+              'text-gray-300'
           }`}>
           {typeof obj === 'string' ? `"${obj}"` : String(obj)}
         </span>
@@ -632,8 +632,8 @@ const AdminManagementView: React.FC = () => {
             <button
               onClick={() => setActiveTab('admins')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'admins'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
                 }`}
             >
               <Shield className="h-4 w-4" />
@@ -642,8 +642,8 @@ const AdminManagementView: React.FC = () => {
             <button
               onClick={() => setActiveTab('activity')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'activity'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
                 }`}
             >
               <Activity className="h-4 w-4" />
@@ -653,7 +653,9 @@ const AdminManagementView: React.FC = () => {
 
           {/* Admins Tab */}
           {activeTab === 'admins' && (
-            <div className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
+            <div
+              style={{ height: "calc(100vh - 180px)" }}
+              className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
               {/* Filters */}
               <div className="flex items-center gap-4 mb-6 flex-shrink-0">
                 <div className="relative flex-1 max-w-sm">
@@ -895,7 +897,8 @@ const AdminManagementView: React.FC = () => {
 
           {/* Activity Logs Tab */}
           {activeTab === 'activity' && (
-            <div className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
+            <div className="bg-gray-800 rounded-lg p-6 flex flex-col"
+              style={{ height: "calc(100vh - 180px)" }}>
               {/* Statistics Cards */}
               {statistics && (
                 <div className="grid grid-cols-4 gap-4 mb-6 flex-shrink-0">
