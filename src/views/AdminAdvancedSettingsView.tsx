@@ -34,9 +34,9 @@ import {
 } from 'lucide-react';
 import {
   adminFeesApi,
-  type PlatformFee,
-  type CreatePlatformFeeDto,
-  type UpdatePlatformFeeDto,
+  type PlatformFeeTier,
+  type CreateFeeTierDto,
+  type UpdateFeeTierDto,
   FeeType,
 } from '@/services/admin-fees-api.service';
 import {
@@ -60,26 +60,32 @@ const AdminAdvancedSettingsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState('fees');
 
   // ==================== Platform Fees States ====================
-  const [fees, setFees] = useState<PlatformFee[]>([]);
+  const [fees, setFees] = useState<PlatformFeeTier[]>([]);
   const [feesLoading, setFeesLoading] = useState(false);
   const [feesSearchTerm, setFeesSearchTerm] = useState('');
   const [feeTypeFilter, setFeeTypeFilter] = useState<string>('all');
   const [feeDialogOpen, setFeeDialogOpen] = useState(false);
   const [feeDetailsDialogOpen, setFeeDetailsDialogOpen] = useState(false);
   const [feeDeleteDialogOpen, setFeeDeleteDialogOpen] = useState(false);
-  const [selectedFee, setSelectedFee] = useState<PlatformFee | null>(null);
-  const [feeForm, setFeeForm] = useState<CreatePlatformFeeDto & { id?: string }>({
-    feeType: FeeType.TRADE_FEE,
+  const [selectedFee, setSelectedFee] = useState<PlatformFeeTier | null>(null);
+  const [feeForm, setFeeForm] = useState<CreateFeeTierDto & { id?: string }>({
+    feeType: FeeType.SPOT_TRADE,
     name: '',
     description: '',
-    feeBps: 0,
+    minVolume: 0,
+    maxVolume: undefined,
+    feeRate: 0,
     currency: '',
     minFeeAmount: undefined,
     maxFeeAmount: undefined,
     flatFeeAmount: undefined,
-    priority: 0,
+    tierOrder: 0,
   });
   const [isEditingFee, setIsEditingFee] = useState(false);
+  const [feesCurrentPage, setFeesCurrentPage] = useState(1);
+  const [feesTotalPages, setFeesTotalPages] = useState(1);
+  const [feesTotal, setFeesTotal] = useState(0);
+  const feesPageSize = 10;
 
   // ==================== Geo-Fencing Rules States ====================
   const [geoRules, setGeoRules] = useState<GeoFencingRule[]>([]);
@@ -100,6 +106,10 @@ const AdminAdvancedSettingsView: React.FC = () => {
     exemptedUserIds: [],
   });
   const [isEditingGeoRule, setIsEditingGeoRule] = useState(false);
+  const [geoRulesCurrentPage, setGeoRulesCurrentPage] = useState(1);
+  const [geoRulesTotalPages, setGeoRulesTotalPages] = useState(1);
+  const [geoRulesTotal, setGeoRulesTotal] = useState(0);
+  const geoRulesPageSize = 10;
 
   // ==================== Geo-Fencing Logs States ====================
   const [geoLogs, setGeoLogs] = useState<GeoFencingLog[]>([]);
@@ -119,7 +129,7 @@ const AdminAdvancedSettingsView: React.FC = () => {
   const loadFees = useCallback(async () => {
     setFeesLoading(true);
     try {
-      const response = await adminFeesApi.getAllFees(
+      const response = await adminFeesApi.getAllFeeTiers(
         feeTypeFilter !== 'all' ? { feeType: feeTypeFilter as FeeType } : undefined
       );
       let filteredFees = response.data;
@@ -132,7 +142,17 @@ const AdminAdvancedSettingsView: React.FC = () => {
         );
       }
 
-      setFees(filteredFees);
+      // Set total for pagination
+      const totalCount = filteredFees.length;
+      setFeesTotal(totalCount);
+      setFeesTotalPages(Math.ceil(totalCount / feesPageSize));
+
+      // Apply pagination
+      const startIndex = (feesCurrentPage - 1) * feesPageSize;
+      const endIndex = startIndex + feesPageSize;
+      const paginatedFees = filteredFees.slice(startIndex, endIndex);
+
+      setFees(paginatedFees);
     } catch (error: any) {
       console.error('Failed to load fees:', error);
       setSnackbarMsg({
@@ -140,13 +160,25 @@ const AdminAdvancedSettingsView: React.FC = () => {
         type: 'error',
       });
       setFees([]);
+      setFeesTotal(0);
+      setFeesTotalPages(1);
     } finally {
       setFeesLoading(false);
     }
-  }, [feesSearchTerm, feeTypeFilter, setSnackbarMsg]);
+  }, [feesSearchTerm, feeTypeFilter, feesCurrentPage, feesPageSize, setSnackbarMsg]);
+
+  const handleFeesSearch = (value: string) => {
+    setFeesSearchTerm(value);
+    setFeesCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleFeeTypeFilter = (value: string) => {
+    setFeeTypeFilter(value);
+    setFeesCurrentPage(1); // Reset to first page when filtering
+  };
 
   const handleCreateOrUpdateFee = async () => {
-    if (!feeForm.name || feeForm.feeBps === undefined) {
+    if (!feeForm.name || feeForm.feeRate === undefined || feeForm.minVolume === undefined) {
       setSnackbarMsg({
         msg: 'Please fill in all required fields',
         type: 'error',
@@ -154,7 +186,7 @@ const AdminAdvancedSettingsView: React.FC = () => {
       return;
     }
 
-    const errors = adminFeesApi.validateFeeData(feeForm);
+    const errors = adminFeesApi.validateFeeTierData(feeForm);
     if (errors.length > 0) {
       setSnackbarMsg({
         msg: errors.join(', '),
@@ -168,45 +200,49 @@ const AdminAdvancedSettingsView: React.FC = () => {
 
     try {
       if (isEditingFee && feeForm.id) {
-        const updateData: UpdatePlatformFeeDto = {
+        const updateData: UpdateFeeTierDto = {
           name: feeForm.name,
           description: feeForm.description,
-          feeBps: feeForm.feeBps,
+          minVolume: feeForm.minVolume,
+          maxVolume: feeForm.maxVolume,
+          feeRate: feeForm.feeRate,
           currency: feeForm.currency,
           minFeeAmount: feeForm.minFeeAmount,
           maxFeeAmount: feeForm.maxFeeAmount,
           flatFeeAmount: feeForm.flatFeeAmount,
-          priority: feeForm.priority,
+          tierOrder: feeForm.tierOrder,
         };
-        const response = await adminFeesApi.updateFee(feeForm.id, updateData);
+        const response = await adminFeesApi.updateFeeTier(feeForm.id, updateData);
         setSnackbarMsg({
-          msg: response.message || 'Fee updated successfully',
+          msg: response.message || 'Fee tier updated successfully',
           type: 'success',
         });
       } else {
-        const response = await adminFeesApi.createFee(feeForm);
+        const response = await adminFeesApi.createFeeTier(feeForm);
         setSnackbarMsg({
-          msg: response.message || 'Fee created successfully',
+          msg: response.message || 'Fee tier created successfully',
           type: 'success',
         });
       }
       setFeeForm({
-        feeType: FeeType.TRADE_FEE,
+        feeType: FeeType.SPOT_TRADE,
         name: '',
         description: '',
-        feeBps: 0,
+        minVolume: 0,
+        maxVolume: undefined,
+        feeRate: 0,
         currency: '',
         minFeeAmount: undefined,
         maxFeeAmount: undefined,
         flatFeeAmount: undefined,
-        priority: 0,
+        tierOrder: 0,
       });
       setIsEditingFee(false);
       await loadFees();
     } catch (error: any) {
-      console.error('Failed to save fee:', error);
+      console.error('Failed to save fee tier:', error);
       setSnackbarMsg({
-        msg: `Failed to save fee: ${error.response?.data?.message || error.message || 'Unknown error'}`,
+        msg: `Failed to save fee tier: ${error.response?.data?.message || error.message || 'Unknown error'}`,
         type: 'error',
       });
     } finally {
@@ -221,17 +257,17 @@ const AdminAdvancedSettingsView: React.FC = () => {
     setActionLoading(true);
 
     try {
-      const response = await adminFeesApi.deleteFee(selectedFee.id);
+      const response = await adminFeesApi.deleteFeeTier(selectedFee.id);
       setSnackbarMsg({
-        msg: response.message || 'Fee deleted successfully',
+        msg: response.message || 'Fee tier deleted successfully',
         type: 'success',
       });
       setSelectedFee(null);
       await loadFees();
     } catch (error: any) {
-      console.error('Failed to delete fee:', error);
+      console.error('Failed to delete fee tier:', error);
       setSnackbarMsg({
-        msg: `Failed to delete fee: ${error.response?.data?.message || error.message || 'Unknown error'}`,
+        msg: `Failed to delete fee tier: ${error.response?.data?.message || error.message || 'Unknown error'}`,
         type: 'error',
       });
     } finally {
@@ -239,21 +275,21 @@ const AdminAdvancedSettingsView: React.FC = () => {
     }
   };
 
-  const handleToggleFeeActive = async (fee: PlatformFee) => {
+  const handleToggleFeeActive = async (fee: PlatformFeeTier) => {
     setActionLoading(true);
     try {
-      const response = await adminFeesApi.updateFee(fee.id, {
+      const response = await adminFeesApi.updateFeeTier(fee.id, {
         isActive: !fee.isActive,
       });
       setSnackbarMsg({
-        msg: response.message || 'Fee status updated successfully',
+        msg: response.message || 'Fee tier status updated successfully',
         type: 'success',
       });
       await loadFees();
     } catch (error: any) {
-      console.error('Failed to toggle fee status:', error);
+      console.error('Failed to toggle fee tier status:', error);
       setSnackbarMsg({
-        msg: `Failed to toggle fee status: ${error.response?.data?.message || error.message || 'Unknown error'}`,
+        msg: `Failed to toggle fee tier status: ${error.response?.data?.message || error.message || 'Unknown error'}`,
         type: 'error',
       });
     } finally {
@@ -261,18 +297,20 @@ const AdminAdvancedSettingsView: React.FC = () => {
     }
   };
 
-  const openFeeEditDialog = (fee: PlatformFee) => {
+  const openFeeEditDialog = (fee: PlatformFeeTier) => {
     setFeeForm({
       id: fee.id,
       feeType: fee.feeType,
       name: fee.name,
       description: fee.description || '',
-      feeBps: fee.feeBps,
+      minVolume: parseFloat(fee.minVolume),
+      maxVolume: fee.maxVolume ? parseFloat(fee.maxVolume) : undefined,
+      feeRate: parseFloat(fee.feeRate),
       currency: fee.currency || '',
       minFeeAmount: fee.minFeeAmount ? parseFloat(fee.minFeeAmount) : undefined,
       maxFeeAmount: fee.maxFeeAmount ? parseFloat(fee.maxFeeAmount) : undefined,
       flatFeeAmount: fee.flatFeeAmount ? parseFloat(fee.flatFeeAmount) : undefined,
-      priority: fee.priority,
+      tierOrder: fee.tierOrder,
     });
     setIsEditingFee(true);
     setFeeDialogOpen(true);
@@ -280,15 +318,17 @@ const AdminAdvancedSettingsView: React.FC = () => {
 
   const openFeeCreateDialog = () => {
     setFeeForm({
-      feeType: FeeType.TRADE_FEE,
+      feeType: FeeType.SPOT_TRADE,
       name: '',
       description: '',
-      feeBps: 0,
+      minVolume: 0,
+      maxVolume: undefined,
+      feeRate: 0,
       currency: '',
       minFeeAmount: undefined,
       maxFeeAmount: undefined,
       flatFeeAmount: undefined,
-      priority: 0,
+      tierOrder: 0,
     });
     setIsEditingFee(false);
     setFeeDialogOpen(true);
@@ -315,7 +355,17 @@ const AdminAdvancedSettingsView: React.FC = () => {
         );
       }
 
-      setGeoRules(filteredRules);
+      // Set total for pagination
+      const totalCount = filteredRules.length;
+      setGeoRulesTotal(totalCount);
+      setGeoRulesTotalPages(Math.ceil(totalCount / geoRulesPageSize));
+
+      // Apply pagination
+      const startIndex = (geoRulesCurrentPage - 1) * geoRulesPageSize;
+      const endIndex = startIndex + geoRulesPageSize;
+      const paginatedRules = filteredRules.slice(startIndex, endIndex);
+
+      setGeoRules(paginatedRules);
     } catch (error: any) {
       console.error('Failed to load geo-fencing rules:', error);
       setSnackbarMsg({
@@ -323,10 +373,22 @@ const AdminAdvancedSettingsView: React.FC = () => {
         type: 'error',
       });
       setGeoRules([]);
+      setGeoRulesTotal(0);
+      setGeoRulesTotalPages(1);
     } finally {
       setGeoRulesLoading(false);
     }
-  }, [geoRulesSearchTerm, geoRulesAllowedFilter, setSnackbarMsg]);
+  }, [geoRulesSearchTerm, geoRulesAllowedFilter, geoRulesCurrentPage, geoRulesPageSize, setSnackbarMsg]);
+
+  const handleGeoRulesSearch = (value: string) => {
+    setGeoRulesSearchTerm(value);
+    setGeoRulesCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleGeoRulesAllowedFilter = (value: string) => {
+    setGeoRulesAllowedFilter(value);
+    setGeoRulesCurrentPage(1); // Reset to first page when filtering
+  };
 
   const handleCreateOrUpdateGeoRule = async () => {
     if (!geoRuleForm.countryCode || !geoRuleForm.countryName) {
@@ -536,8 +598,8 @@ const AdminAdvancedSettingsView: React.FC = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const formatFeeDisplay = (fee: PlatformFee) => {
-    return adminFeesApi.formatFeeDisplay(fee);
+  const formatFeeDisplay = (fee: PlatformFeeTier) => {
+    return adminFeesApi.formatFeeTierDisplay(fee);
   };
 
   const uniqueCountries = [...new Set(geoLogs.map((log) => log.countryCode).filter(Boolean))].sort();
@@ -546,7 +608,7 @@ const AdminAdvancedSettingsView: React.FC = () => {
     <div className="flex flex-col h-full">
       <PageHeader
         title="Advanced Settings"
-        description="Manage platform fees and geo-fencing rules"
+        description="Manage platform fee tiers with volume-based pricing and geo-fencing rules"
       >
         <div className="flex gap-2 my-0">
           <RefreshButton
@@ -562,7 +624,7 @@ const AdminAdvancedSettingsView: React.FC = () => {
           {activeTab === 'fees' && (
             <Button size="sm" onClick={openFeeCreateDialog}>
               <Plus className="p-0" />
-              New Fee
+              New Fee Tier
             </Button>
           )}
           {activeTab === 'geo-rules' && (
@@ -587,7 +649,7 @@ const AdminAdvancedSettingsView: React.FC = () => {
               }`}
             >
               <DollarSign className="h-4 w-4" />
-              Platform Fees
+              Fee Tiers
             </button>
             <button
               onClick={() => setActiveTab('geo-rules')}
@@ -626,21 +688,22 @@ const AdminAdvancedSettingsView: React.FC = () => {
                   <Input
                     placeholder="Search fees..."
                     value={feesSearchTerm}
-                    onChange={(e) => setFeesSearchTerm(e.target.value)}
+                    onChange={(e) => handleFeesSearch(e.target.value)}
                     className="pl-9"
                   />
                 </div>
                 <div className="w-40">
-                  <Select value={feeTypeFilter} onValueChange={setFeeTypeFilter}>
+                  <Select value={feeTypeFilter} onValueChange={handleFeeTypeFilter}>
                     <SelectTrigger>
                       <SelectValue placeholder="Fee Type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value={FeeType.TRADE_FEE}>Trade Fee</SelectItem>
-                      <SelectItem value={FeeType.WITHDRAWAL_FEE}>Withdrawal Fee</SelectItem>
-                      <SelectItem value={FeeType.DEPOSIT_FEE}>Deposit Fee</SelectItem>
-                      <SelectItem value={FeeType.TRANSFER_FEE}>Transfer Fee</SelectItem>
+                      <SelectItem value={FeeType.SPOT_TRADE}>Spot Trade</SelectItem>
+                      <SelectItem value={FeeType.PERPS_TRADE}>Perps Trade</SelectItem>
+                      <SelectItem value={FeeType.WITHDRAWAL}>Withdrawal</SelectItem>
+                      <SelectItem value={FeeType.DEPOSIT}>Deposit</SelectItem>
+                      <SelectItem value={FeeType.TRANSFER}>Transfer</SelectItem>
                       <SelectItem value={FeeType.OTHER}>Other</SelectItem>
                     </SelectContent>
                   </Select>
@@ -658,9 +721,9 @@ const AdminAdvancedSettingsView: React.FC = () => {
                       headers={[
                         'Name',
                         'Type',
+                        'Volume Range',
                         'Fee Amount',
-                        'Currency',
-                        'Priority',
+                        'Tier Order',
                         'Status',
                         'Actions',
                       ]}
@@ -689,9 +752,11 @@ const AdminAdvancedSettingsView: React.FC = () => {
                             <td className="py-3 px-4 text-gray-300">
                               {fee.feeType.replace('_', ' ')}
                             </td>
+                            <td className="py-3 px-4 text-gray-300">
+                              {adminFeesApi.formatVolumeRange(fee)}
+                            </td>
                             <td className="py-3 px-4 text-gray-300">{formatFeeDisplay(fee)}</td>
-                            <td className="py-3 px-4 text-gray-300">{fee.currency || 'N/A'}</td>
-                            <td className="py-3 px-4 text-gray-300">{fee.priority}</td>
+                            <td className="py-3 px-4 text-gray-300">{fee.tierOrder}</td>
                             <td className="py-3 px-4">
                               {fee.isActive ? (
                                 <Badge className="bg-green-100 text-green-800">Active</Badge>
@@ -757,6 +822,35 @@ const AdminAdvancedSettingsView: React.FC = () => {
                   </table>
                 </div>
               </div>
+
+              {/* Pagination */}
+              {feesTotalPages > 1 && (
+                <div className="flex items-center justify-between space-x-2 py-4 flex-shrink-0">
+                  <div className="text-sm text-gray-400">
+                    Page {feesCurrentPage} of {feesTotalPages} (Total: {feesTotal} fee{feesTotal !== 1 ? 's' : ''})
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFeesCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={feesCurrentPage <= 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFeesCurrentPage((p) => Math.min(feesTotalPages, p + 1))}
+                      disabled={feesCurrentPage >= feesTotalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -773,12 +867,12 @@ const AdminAdvancedSettingsView: React.FC = () => {
                   <Input
                     placeholder="Search countries..."
                     value={geoRulesSearchTerm}
-                    onChange={(e) => setGeoRulesSearchTerm(e.target.value)}
+                    onChange={(e) => handleGeoRulesSearch(e.target.value)}
                     className="pl-9"
                   />
                 </div>
                 <div className="w-40">
-                  <Select value={geoRulesAllowedFilter} onValueChange={setGeoRulesAllowedFilter}>
+                  <Select value={geoRulesAllowedFilter} onValueChange={handleGeoRulesAllowedFilter}>
                     <SelectTrigger>
                       <SelectValue placeholder="Access Type" />
                     </SelectTrigger>
@@ -911,6 +1005,35 @@ const AdminAdvancedSettingsView: React.FC = () => {
                   </table>
                 </div>
               </div>
+
+              {/* Pagination */}
+              {geoRulesTotalPages > 1 && (
+                <div className="flex items-center justify-between space-x-2 py-4 flex-shrink-0">
+                  <div className="text-sm text-gray-400">
+                    Page {geoRulesCurrentPage} of {geoRulesTotalPages} (Total: {geoRulesTotal} rule{geoRulesTotal !== 1 ? 's' : ''})
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setGeoRulesCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={geoRulesCurrentPage <= 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setGeoRulesCurrentPage((p) => Math.min(geoRulesTotalPages, p + 1))}
+                      disabled={geoRulesCurrentPage >= geoRulesTotalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1092,10 +1215,10 @@ const AdminAdvancedSettingsView: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              {isEditingFee ? 'Edit Platform Fee' : 'Create Platform Fee'}
+              {isEditingFee ? 'Edit Fee Tier' : 'Create Fee Tier'}
             </DialogTitle>
             <DialogDescription>
-              {isEditingFee ? 'Update the platform fee' : 'Create a new platform fee'}
+              {isEditingFee ? 'Update the fee tier configuration' : 'Create a new fee tier with volume-based pricing'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -1124,10 +1247,11 @@ const AdminAdvancedSettingsView: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={FeeType.TRADE_FEE}>Trade Fee</SelectItem>
-                    <SelectItem value={FeeType.WITHDRAWAL_FEE}>Withdrawal Fee</SelectItem>
-                    <SelectItem value={FeeType.DEPOSIT_FEE}>Deposit Fee</SelectItem>
-                    <SelectItem value={FeeType.TRANSFER_FEE}>Transfer Fee</SelectItem>
+                    <SelectItem value={FeeType.SPOT_TRADE}>Spot Trade</SelectItem>
+                    <SelectItem value={FeeType.PERPS_TRADE}>Perps Trade</SelectItem>
+                    <SelectItem value={FeeType.WITHDRAWAL}>Withdrawal</SelectItem>
+                    <SelectItem value={FeeType.DEPOSIT}>Deposit</SelectItem>
+                    <SelectItem value={FeeType.TRANSFER}>Transfer</SelectItem>
                     <SelectItem value={FeeType.OTHER}>Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1143,22 +1267,58 @@ const AdminAdvancedSettingsView: React.FC = () => {
                 rows={3}
               />
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="feeBps">
-                  Fee (Basis Points) <span className="text-red-500">*</span>
+                <Label htmlFor="minVolume">
+                  Min Volume <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="feeBps"
+                  id="minVolume"
                   type="number"
-                  value={feeForm.feeBps}
+                  step="0.01"
+                  value={feeForm.minVolume}
                   onChange={(e) =>
-                    setFeeForm({ ...feeForm, feeBps: parseFloat(e.target.value) || 0 })
+                    setFeeForm({ ...feeForm, minVolume: parseFloat(e.target.value) || 0 })
                   }
                   placeholder="0"
                 />
+                <p className="text-xs text-gray-400">Minimum transaction volume for this tier</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="maxVolume">Max Volume</Label>
+                <Input
+                  id="maxVolume"
+                  type="number"
+                  step="0.01"
+                  value={feeForm.maxVolume || ''}
+                  onChange={(e) =>
+                    setFeeForm({
+                      ...feeForm,
+                      maxVolume: e.target.value ? parseFloat(e.target.value) : undefined,
+                    })
+                  }
+                  placeholder="Leave empty for unlimited"
+                />
+                <p className="text-xs text-gray-400">Maximum volume (empty = unlimited)</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="feeRate">
+                  Fee Rate <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="feeRate"
+                  type="number"
+                  step="0.0001"
+                  value={feeForm.feeRate}
+                  onChange={(e) =>
+                    setFeeForm({ ...feeForm, feeRate: parseFloat(e.target.value) || 0 })
+                  }
+                  placeholder="0.002"
+                />
                 <p className="text-xs text-gray-400">
-                  {adminFeesApi.bpsToPercentage(feeForm.feeBps)}%
+                  {adminFeesApi.feeRateToPercentage(feeForm.feeRate).toFixed(2)}%
                 </p>
               </div>
               <div className="grid gap-2">
@@ -1171,16 +1331,17 @@ const AdminAdvancedSettingsView: React.FC = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="priority">Priority</Label>
+                <Label htmlFor="tierOrder">Tier Order</Label>
                 <Input
-                  id="priority"
+                  id="tierOrder"
                   type="number"
-                  value={feeForm.priority}
+                  value={feeForm.tierOrder}
                   onChange={(e) =>
-                    setFeeForm({ ...feeForm, priority: parseInt(e.target.value) || 0 })
+                    setFeeForm({ ...feeForm, tierOrder: parseInt(e.target.value) || 0 })
                   }
                   placeholder="0"
                 />
+                <p className="text-xs text-gray-400">Display order</p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -1240,15 +1401,17 @@ const AdminAdvancedSettingsView: React.FC = () => {
               onClick={() => {
                 setFeeDialogOpen(false);
                 setFeeForm({
-                  feeType: FeeType.TRADE_FEE,
+                  feeType: FeeType.SPOT_TRADE,
                   name: '',
                   description: '',
-                  feeBps: 0,
+                  minVolume: 0,
+                  maxVolume: undefined,
+                  feeRate: 0,
                   currency: '',
                   minFeeAmount: undefined,
                   maxFeeAmount: undefined,
                   flatFeeAmount: undefined,
-                  priority: 0,
+                  tierOrder: 0,
                 });
                 setIsEditingFee(false);
               }}
@@ -1263,9 +1426,9 @@ const AdminAdvancedSettingsView: React.FC = () => {
                   {isEditingFee ? 'Updating...' : 'Creating...'}
                 </>
               ) : isEditingFee ? (
-                'Update Fee'
+                'Update Tier'
               ) : (
-                'Create Fee'
+                'Create Tier'
               )}
             </Button>
           </DialogFooter>
@@ -1278,7 +1441,7 @@ const AdminAdvancedSettingsView: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Platform Fee Details
+              Fee Tier Details
             </DialogTitle>
           </DialogHeader>
           {selectedFee && (
@@ -1299,20 +1462,30 @@ const AdminAdvancedSettingsView: React.FC = () => {
                   <p className="text-white mt-1">{selectedFee.description}</p>
                 </div>
               )}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-gray-400">Fee (Basis Points)</Label>
+                  <Label className="text-gray-400">Volume Range</Label>
+                  <p className="text-white mt-1">{adminFeesApi.formatVolumeRange(selectedFee)}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-400">Fee Rate</Label>
                   <p className="text-white mt-1">
-                    {selectedFee.feeBps} ({adminFeesApi.bpsToPercentage(selectedFee.feeBps)}%)
+                    {selectedFee.feeRate} ({adminFeesApi.feeRateToPercentage(parseFloat(selectedFee.feeRate)).toFixed(2)}%)
                   </p>
                 </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label className="text-gray-400">Currency</Label>
                   <p className="text-white mt-1">{selectedFee.currency || 'N/A'}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-400">Priority</Label>
-                  <p className="text-white mt-1">{selectedFee.priority}</p>
+                  <Label className="text-gray-400">Tier Order</Label>
+                  <p className="text-white mt-1">{selectedFee.tierOrder}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-400">Fee Display</Label>
+                  <p className="text-white mt-1">{formatFeeDisplay(selectedFee)}</p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
@@ -1329,7 +1502,7 @@ const AdminAdvancedSettingsView: React.FC = () => {
                   <p className="text-white mt-1">{selectedFee.flatFeeAmount || 'N/A'}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label className="text-gray-400">Status</Label>
                   <div className="mt-1">
@@ -1339,10 +1512,6 @@ const AdminAdvancedSettingsView: React.FC = () => {
                       <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
                     )}
                   </div>
-                </div>
-                <div>
-                  <Label className="text-gray-400">Display</Label>
-                  <p className="text-white mt-1">{formatFeeDisplay(selectedFee)}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1377,10 +1546,10 @@ const AdminAdvancedSettingsView: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Trash2 className="h-5 w-5" />
-              Delete Platform Fee
+              Delete Fee Tier
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "<span className="font-semibold">{selectedFee?.name}</span>"? This action
+              Are you sure you want to delete the fee tier "<span className="font-semibold">{selectedFee?.name}</span>"? This action
               cannot be undone.
             </DialogDescription>
           </DialogHeader>

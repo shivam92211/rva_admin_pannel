@@ -4,64 +4,71 @@ import { AuthService } from './auth';
 // ==================== Interfaces ====================
 
 export enum FeeType {
-  TRADE_FEE = 'TRADE_FEE',
-  WITHDRAWAL_FEE = 'WITHDRAWAL_FEE',
-  DEPOSIT_FEE = 'DEPOSIT_FEE',
-  TRANSFER_FEE = 'TRANSFER_FEE',
+  SPOT_TRADE = 'SPOT_TRADE',
+  PERPS_TRADE = 'PERPS_TRADE',
+  WITHDRAWAL = 'WITHDRAWAL',
+  DEPOSIT = 'DEPOSIT',
+  TRANSFER = 'TRANSFER',
   OTHER = 'OTHER',
 }
 
-export interface PlatformFee {
+export interface PlatformFeeTier {
   id: string;
   feeType: FeeType;
   name: string;
   description: string | null;
-  feeBps: number;
+  minVolume: string; // Decimal as string
+  maxVolume: string | null; // Decimal as string, null = unlimited
+  feeRate: string; // Decimal as string (e.g., "0.002" for 0.2%)
   currency: string | null;
   minFeeAmount: string | null;
   maxFeeAmount: string | null;
   flatFeeAmount: string | null;
   isActive: boolean;
-  priority: number;
+  tierOrder: number;
   createdAt: string;
   updatedAt: string;
   createdBy: string | null;
   updatedBy: string | null;
 }
 
-export interface CreatePlatformFeeDto {
+export interface CreateFeeTierDto {
   feeType: FeeType;
   name: string;
   description?: string;
-  feeBps: number;
+  minVolume: number;
+  maxVolume?: number | null;
+  feeRate: number; // Decimal (e.g., 0.002 for 0.2%)
   currency?: string;
   minFeeAmount?: number;
   maxFeeAmount?: number;
   flatFeeAmount?: number;
-  priority?: number;
+  tierOrder?: number;
 }
 
-export interface UpdatePlatformFeeDto {
+export interface UpdateFeeTierDto {
   name?: string;
   description?: string;
-  feeBps?: number;
+  minVolume?: number;
+  maxVolume?: number | null;
+  feeRate?: number;
   currency?: string;
   minFeeAmount?: number;
   maxFeeAmount?: number;
   flatFeeAmount?: number;
   isActive?: boolean;
-  priority?: number;
+  tierOrder?: number;
 }
 
-export interface PlatformFeeResponse {
+export interface FeeTierResponse {
   success: boolean;
   message?: string;
-  data?: PlatformFee;
+  data?: PlatformFeeTier;
 }
 
-export interface PlatformFeesListResponse {
+export interface FeeTiersListResponse {
   success: boolean;
-  data: PlatformFee[];
+  data: PlatformFeeTier[];
   pagination?: {
     page: number;
     limit: number;
@@ -70,7 +77,7 @@ export interface PlatformFeesListResponse {
   };
 }
 
-export interface GetFeesParams {
+export interface GetFeeTiersParams {
   feeType?: FeeType;
   isActive?: boolean;
   currency?: string;
@@ -78,13 +85,16 @@ export interface GetFeesParams {
 
 export interface FeeCalculationResult {
   feeAmount: number;
-  feeBps: number;
+  feeRate: number;
   feePercentage: number;
-  appliedFeeConfig?: {
+  appliedTier?: {
     id: string;
     name: string;
     feeType: FeeType;
     currency: string | null;
+    minVolume: number;
+    maxVolume: number | null;
+    feeRate: number;
   };
 }
 
@@ -128,15 +138,15 @@ class AdminFeesAPI {
     });
   }
 
-  // ==================== Fee Management ====================
+  // ==================== Fee Tier Management ====================
 
   /**
-   * Get all platform fees
+   * Get all platform fee tiers
    * @param params Query parameters for filtering
-   * @returns List of fees
+   * @returns List of fee tiers
    */
-  async getAllFees(params?: GetFeesParams): Promise<PlatformFeesListResponse> {
-    const response = await this.client.get<PlatformFeesListResponse>(
+  async getAllFeeTiers(params?: GetFeeTiersParams): Promise<FeeTiersListResponse> {
+    const response = await this.client.get<FeeTiersListResponse>(
       '/api/v1/admin/fees',
       { params }
     );
@@ -144,24 +154,24 @@ class AdminFeesAPI {
   }
 
   /**
-   * Get platform fee by ID
-   * @param id Fee ID
-   * @returns Fee details
+   * Get platform fee tier by ID
+   * @param id Fee Tier ID
+   * @returns Fee tier details
    */
-  async getFeeById(id: string): Promise<PlatformFeeResponse> {
-    const response = await this.client.get<PlatformFeeResponse>(
+  async getFeeTierById(id: string): Promise<FeeTierResponse> {
+    const response = await this.client.get<FeeTierResponse>(
       `/api/v1/admin/fees/${id}`
     );
     return response.data;
   }
 
   /**
-   * Create new platform fee
-   * @param data Fee data
-   * @returns Created fee
+   * Create new platform fee tier
+   * @param data Fee tier data
+   * @returns Created fee tier
    */
-  async createFee(data: CreatePlatformFeeDto): Promise<PlatformFeeResponse> {
-    const response = await this.client.post<PlatformFeeResponse>(
+  async createFeeTier(data: CreateFeeTierDto): Promise<FeeTierResponse> {
+    const response = await this.client.post<FeeTierResponse>(
       '/api/v1/admin/fees',
       data
     );
@@ -169,13 +179,13 @@ class AdminFeesAPI {
   }
 
   /**
-   * Update platform fee
-   * @param id Fee ID
+   * Update platform fee tier
+   * @param id Fee Tier ID
    * @param data Update data
-   * @returns Updated fee
+   * @returns Updated fee tier
    */
-  async updateFee(id: string, data: UpdatePlatformFeeDto): Promise<PlatformFeeResponse> {
-    const response = await this.client.put<PlatformFeeResponse>(
+  async updateFeeTier(id: string, data: UpdateFeeTierDto): Promise<FeeTierResponse> {
+    const response = await this.client.put<FeeTierResponse>(
       `/api/v1/admin/fees/${id}`,
       data
     );
@@ -183,13 +193,28 @@ class AdminFeesAPI {
   }
 
   /**
-   * Delete platform fee
-   * @param id Fee ID
+   * Delete platform fee tier
+   * @param id Fee Tier ID
    * @returns Delete response
    */
-  async deleteFee(id: string): Promise<PlatformFeeResponse> {
-    const response = await this.client.delete<PlatformFeeResponse>(
+  async deleteFeeTier(id: string): Promise<FeeTierResponse> {
+    const response = await this.client.delete<FeeTierResponse>(
       `/api/v1/admin/fees/${id}`
+    );
+    return response.data;
+  }
+
+  /**
+   * Get fee tiers by type
+   * @param feeType Fee type
+   * @param currency Optional currency filter
+   * @returns List of fee tiers for the specified type
+   */
+  async getTiersByFeeType(feeType: FeeType, currency?: string): Promise<FeeTiersListResponse> {
+    const params = currency ? { currency } : undefined;
+    const response = await this.client.get<FeeTiersListResponse>(
+      `/api/v1/admin/fees/tiers/${feeType}`,
+      { params }
     );
     return response.data;
   }
@@ -197,13 +222,26 @@ class AdminFeesAPI {
   // ==================== Fee Calculation & Testing ====================
 
   /**
-   * Calculate trade fee for a given amount
+   * Calculate spot trade fee for a given amount
    * @param params Calculation parameters
    * @returns Fee calculation result
    */
-  async calculateTradeFee(params: CalculateFeeParams): Promise<FeeCalculationResponse> {
+  async calculateSpotTradeFee(params: CalculateFeeParams): Promise<FeeCalculationResponse> {
     const response = await this.client.get<FeeCalculationResponse>(
-      '/api/v1/admin/fees/calculate/trade',
+      '/api/v1/admin/fees/calculate/spot-trade',
+      { params }
+    );
+    return response.data;
+  }
+
+  /**
+   * Calculate perps trade fee for a given amount
+   * @param params Calculation parameters
+   * @returns Fee calculation result
+   */
+  async calculatePerpsTradeFee(params: CalculateFeeParams): Promise<FeeCalculationResponse> {
+    const response = await this.client.get<FeeCalculationResponse>(
+      '/api/v1/admin/fees/calculate/perps-trade',
       { params }
     );
     return response.data;
@@ -225,102 +263,151 @@ class AdminFeesAPI {
   // ==================== Helper Methods ====================
 
   /**
-   * Get all trade fees
-   * @returns List of trade fees
+   * Get all spot trade fee tiers
+   * @returns List of spot trade fee tiers
    */
-  async getTradeFees(): Promise<PlatformFeesListResponse> {
-    return this.getAllFees({ feeType: FeeType.TRADE_FEE });
+  async getSpotTradeFees(): Promise<FeeTiersListResponse> {
+    return this.getAllFeeTiers({ feeType: FeeType.SPOT_TRADE });
   }
 
   /**
-   * Get all withdrawal fees
-   * @returns List of withdrawal fees
+   * Get all perps trade fee tiers
+   * @returns List of perps trade fee tiers
    */
-  async getWithdrawalFees(): Promise<PlatformFeesListResponse> {
-    return this.getAllFees({ feeType: FeeType.WITHDRAWAL_FEE });
+  async getPerpsTradeFees(): Promise<FeeTiersListResponse> {
+    return this.getAllFeeTiers({ feeType: FeeType.PERPS_TRADE });
   }
 
   /**
-   * Get all deposit fees
-   * @returns List of deposit fees
+   * Get all withdrawal fee tiers
+   * @returns List of withdrawal fee tiers
    */
-  async getDepositFees(): Promise<PlatformFeesListResponse> {
-    return this.getAllFees({ feeType: FeeType.DEPOSIT_FEE });
+  async getWithdrawalFees(): Promise<FeeTiersListResponse> {
+    return this.getAllFeeTiers({ feeType: FeeType.WITHDRAWAL });
   }
 
   /**
-   * Get all transfer fees
-   * @returns List of transfer fees
+   * Get all deposit fee tiers
+   * @returns List of deposit fee tiers
    */
-  async getTransferFees(): Promise<PlatformFeesListResponse> {
-    return this.getAllFees({ feeType: FeeType.TRANSFER_FEE });
+  async getDepositFees(): Promise<FeeTiersListResponse> {
+    return this.getAllFeeTiers({ feeType: FeeType.DEPOSIT });
   }
 
   /**
-   * Get all active fees
-   * @returns List of active fees
+   * Get all transfer fee tiers
+   * @returns List of transfer fee tiers
    */
-  async getActiveFees(): Promise<PlatformFeesListResponse> {
-    return this.getAllFees({ isActive: true });
+  async getTransferFees(): Promise<FeeTiersListResponse> {
+    return this.getAllFeeTiers({ feeType: FeeType.TRANSFER });
   }
 
   /**
-   * Get fees for a specific currency
+   * Get all active fee tiers
+   * @returns List of active fee tiers
+   */
+  async getActiveFees(): Promise<FeeTiersListResponse> {
+    return this.getAllFeeTiers({ isActive: true });
+  }
+
+  /**
+   * Get fee tiers for a specific currency
    * @param currency Currency code (e.g., 'BTC', 'ETH')
-   * @returns List of fees for the currency
+   * @returns List of fee tiers for the currency
    */
-  async getFeesByCurrency(currency: string): Promise<PlatformFeesListResponse> {
-    return this.getAllFees({ currency });
+  async getFeesByCurrency(currency: string): Promise<FeeTiersListResponse> {
+    return this.getAllFeeTiers({ currency });
+  }
+
+  // ==================== Utility Methods ====================
+
+  /**
+   * Convert fee rate decimal to percentage
+   * @param feeRate Fee rate as decimal (e.g., 0.002)
+   * @returns Percentage value (e.g., 0.2)
+   */
+  feeRateToPercentage(feeRate: number): number {
+    return feeRate * 100;
   }
 
   /**
-   * Convert basis points to percentage
-   * @param bps Basis points
-   * @returns Percentage value
+   * Convert percentage to fee rate decimal
+   * @param percentage Percentage value (e.g., 0.2)
+   * @returns Fee rate as decimal (e.g., 0.002)
    */
-  bpsToPercentage(bps: number): number {
-    return bps / 100;
+  percentageToFeeRate(percentage: number): number {
+    return percentage / 100;
   }
 
   /**
-   * Convert percentage to basis points
-   * @param percentage Percentage value
-   * @returns Basis points
+   * Format fee tier for display
+   * @param tier Platform fee tier
+   * @returns Formatted fee tier string
    */
-  percentageToBps(percentage: number): number {
-    return Math.round(percentage * 100);
-  }
-
-  /**
-   * Format fee for display
-   * @param fee Platform fee
-   * @returns Formatted fee string
-   */
-  formatFeeDisplay(fee: PlatformFee): string {
-    if (fee.flatFeeAmount) {
-      return `${fee.flatFeeAmount} ${fee.currency || ''}`.trim();
+  formatFeeTierDisplay(tier: PlatformFeeTier): string {
+    if (tier.flatFeeAmount) {
+      return `${tier.flatFeeAmount} ${tier.currency || ''}`.trim();
     }
-    const percentage = this.bpsToPercentage(fee.feeBps);
+    const percentage = this.feeRateToPercentage(parseFloat(tier.feeRate));
     return `${percentage}%`;
   }
 
   /**
-   * Validate fee configuration
-   * @param data Fee data
+   * Format volume range for display
+   * @param tier Platform fee tier
+   * @returns Formatted range string (e.g., "$0 - $100", "$1000+")
+   */
+  formatVolumeRange(tier: PlatformFeeTier): string {
+    const minVolume = parseFloat(tier.minVolume);
+    const maxVolume = tier.maxVolume ? parseFloat(tier.maxVolume) : null;
+
+    if (maxVolume === null) {
+      return `$${minVolume.toLocaleString()}+`;
+    }
+
+    return `$${minVolume.toLocaleString()} - $${maxVolume.toLocaleString()}`;
+  }
+
+  /**
+   * Get tier description with range and fee
+   * @param tier Platform fee tier
+   * @returns Description string
+   */
+  getTierDescription(tier: PlatformFeeTier): string {
+    const range = this.formatVolumeRange(tier);
+    const fee = this.formatFeeTierDisplay(tier);
+    return `${range} → ${fee}`;
+  }
+
+  /**
+   * Validate fee tier data
+   * @param data Fee tier data
    * @returns Validation errors or null if valid
    */
-  validateFeeData(data: CreatePlatformFeeDto | UpdatePlatformFeeDto): string[] {
+  validateFeeTierData(data: CreateFeeTierDto | UpdateFeeTierDto): string[] {
     const errors: string[] = [];
 
-    if ('feeBps' in data && data.feeBps !== undefined) {
-      if (data.feeBps < 0 || data.feeBps > 10000) {
-        errors.push('Fee in basis points must be between 0 and 10000');
+    if ('feeRate' in data && data.feeRate !== undefined) {
+      if (data.feeRate < 0 || data.feeRate > 1) {
+        errors.push('Fee rate must be between 0 and 1 (e.g., 0.002 for 0.2%)');
+      }
+    }
+
+    if ('minVolume' in data && data.minVolume !== undefined) {
+      if (data.minVolume < 0) {
+        errors.push('Minimum volume cannot be negative');
       }
     }
 
     if (data.minFeeAmount !== undefined && data.maxFeeAmount !== undefined) {
       if (data.minFeeAmount && data.maxFeeAmount && data.minFeeAmount > data.maxFeeAmount) {
         errors.push('Minimum fee amount cannot be greater than maximum fee amount');
+      }
+    }
+
+    if ('maxVolume' in data && data.maxVolume !== undefined && data.maxVolume !== null) {
+      if ('minVolume' in data && data.minVolume !== undefined && data.maxVolume <= data.minVolume) {
+        errors.push('Maximum volume must be greater than minimum volume');
       }
     }
 
@@ -331,6 +418,65 @@ class AdminFeesAPI {
     }
 
     return errors;
+  }
+
+  /**
+   * Calculate fee amount locally (client-side estimation)
+   * @param amount Transaction amount
+   * @param feeRate Fee rate as decimal
+   * @param minFee Optional minimum fee
+   * @param maxFee Optional maximum fee
+   * @returns Calculated fee amount
+   */
+  calculateFeeAmount(
+    amount: number,
+    feeRate: number,
+    minFee?: number,
+    maxFee?: number
+  ): number {
+    let feeAmount = amount * feeRate;
+
+    if (minFee !== undefined && feeAmount < minFee) {
+      feeAmount = minFee;
+    }
+
+    if (maxFee !== undefined && feeAmount > maxFee) {
+      feeAmount = maxFee;
+    }
+
+    return feeAmount;
+  }
+
+  /**
+   * Find applicable tier for a given amount (client-side)
+   * @param tiers List of fee tiers (must be sorted by minVolume)
+   * @param amount Transaction amount
+   * @returns Applicable tier or null
+   */
+  findApplicableTier(tiers: PlatformFeeTier[], amount: number): PlatformFeeTier | null {
+    for (const tier of tiers) {
+      const minVolume = parseFloat(tier.minVolume);
+      const maxVolume = tier.maxVolume ? parseFloat(tier.maxVolume) : null;
+
+      if (amount >= minVolume && (maxVolume === null || amount < maxVolume)) {
+        return tier;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Sort tiers by volume range
+   * @param tiers List of fee tiers
+   * @returns Sorted tiers
+   */
+  sortTiersByVolume(tiers: PlatformFeeTier[]): PlatformFeeTier[] {
+    return [...tiers].sort((a, b) => {
+      const aMin = parseFloat(a.minVolume);
+      const bMin = parseFloat(b.minVolume);
+      return aMin - bMin;
+    });
   }
 }
 

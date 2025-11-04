@@ -1,22 +1,22 @@
-import React, { Suspense } from 'react'
-import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom'
-import DefaultLayout from '../layouts/DefaultLayout'
-import DashboardView from '../views/DashboardView'
-import { Login } from '../views/Login'
-import { ProtectedRoute } from '../components/auth/ProtectedRoute'
+import React, { Suspense } from 'react';
+import { createBrowserRouter, createHashRouter, RouterProvider, Outlet } from 'react-router-dom';
+import DefaultLayout from '../layouts/DefaultLayout';
+import DashboardView from '../views/DashboardView';
+import { Login } from '../views/Login';
+import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 
 // Lazy load components
-const SubAccountsView = React.lazy(() => import('../views/SubAccountsView'))
-const TransfersView = React.lazy(() => import('../views/TransfersView'))
-const DepositsView = React.lazy(() => import('../views/DepositsView'))
-const WithdrawalsView = React.lazy(() => import('../views/WithdrawalsView'))
-const RebatesView = React.lazy(() => import('../views/RebatesView'))
-const UsersView = React.lazy(() => import('../views/UsersView'))
-const KycSubmissionsView = React.lazy(() => import('../views/KycSubmissionsView'))
-const TradingPairsView = React.lazy(() => import('../views/TradingPairsView'))
-const AdminManagementView = React.lazy(() => import('../views/AdminManagementView'))
-const AdminBasicSettingsView = React.lazy(() => import('../views/AdminBasicSettingsView'))
-const AdminAdvancedSettingsView = React.lazy(() => import('../views/AdminAdvancedSettingsView'))
+const SubAccountsView = React.lazy(() => import('../views/SubAccountsView'));
+const TransfersView = React.lazy(() => import('../views/TransfersView'));
+const DepositsView = React.lazy(() => import('../views/DepositsView'));
+const WithdrawalsView = React.lazy(() => import('../views/WithdrawalsView'));
+const RebatesView = React.lazy(() => import('../views/RebatesView'));
+const UsersView = React.lazy(() => import('../views/UsersView'));
+const KycSubmissionsView = React.lazy(() => import('../views/KycSubmissionsView'));
+const TradingPairsView = React.lazy(() => import('../views/TradingPairsView'));
+const AdminManagementView = React.lazy(() => import('../views/AdminManagementView'));
+const AdminBasicSettingsView = React.lazy(() => import('../views/AdminBasicSettingsView'));
+const AdminAdvancedSettingsView = React.lazy(() => import('../views/AdminAdvancedSettingsView'));
 
 // Protected layout wrapper component
 const ProtectedLayoutWrapper: React.FC = () => {
@@ -30,10 +30,10 @@ const ProtectedLayoutWrapper: React.FC = () => {
         </Suspense>
       </DefaultLayout>
     </ProtectedRoute>
-  )
-}
+  );
+};
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     path: '/login',
     element: <Login />
@@ -96,11 +96,11 @@ export const router = createBrowserRouter([
       }
     ]
   }
-])
+]);
 
 // Router provider component
 const AppRouter: React.FC = () => {
-  return <RouterProvider router={router} />
-}
+  return <RouterProvider router={router} />;
+};
 
-export default AppRouter
+export default AppRouter;
