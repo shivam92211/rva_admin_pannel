@@ -16,6 +16,7 @@ import {
   ArrowRightLeft,
   Shield,
   Settings,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 
@@ -98,6 +99,11 @@ const navMain = [
     title: "Basic Settings",
     url: "/basic-settings",
     icon: Settings,
+  },
+  {
+    title: "Advanced Settings",
+    url: "/advanced-settings",
+    icon: SlidersHorizontal,
   },
 ];
 

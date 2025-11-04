@@ -52,7 +52,7 @@ import { Badge } from '@/components/ui/badge';
 
 const AdminBasicSettingsView: React.FC = () => {
   const [, setSnackbarMsg] = useSnackbarMsg();
-  const [activeTab, setActiveTab] = useState('terms');
+  const [activeTab, setActiveTab] = useState('contact-us');
 
   // ==================== Terms & Conditions States ====================
   const [terms, setTerms] = useState<TermsAndConditions[]>([]);
@@ -562,14 +562,14 @@ const AdminBasicSettingsView: React.FC = () => {
           {/* Tab Navigation */}
           <div className="bg-gray-800 rounded-lg p-1 inline-flex space-x-1">
             <button
-              onClick={() => setActiveTab('terms')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'terms'
+              onClick={() => setActiveTab('contact-us')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'contact-us'
                 ? 'bg-blue-600 text-white'
                 : 'text-gray-400 hover:text-white hover:bg-gray-700'
                 }`}
             >
-              <FileText className="h-4 w-4" />
-              Terms & Conditions
+              <MessageSquare className="h-4 w-4" />
+              Contact Us Submissions
             </button>
             <button
               onClick={() => setActiveTab('faqs')}
@@ -582,35 +582,47 @@ const AdminBasicSettingsView: React.FC = () => {
               FAQs
             </button>
             <button
-              onClick={() => setActiveTab('contact-us')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'contact-us'
+              onClick={() => setActiveTab('terms')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'terms'
                 ? 'bg-blue-600 text-white'
                 : 'text-gray-400 hover:text-white hover:bg-gray-700'
                 }`}
             >
-              <MessageSquare className="h-4 w-4" />
-              Contact Us Submissions
+              <FileText className="h-4 w-4" />
+              Terms & Conditions
             </button>
           </div>
 
-          {/* Terms & Conditions Tab */}
-          {activeTab === 'terms' && (
-            <div
-              style={{ height: "calc(100vh - 180px)" }}
-              className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
-              {/* Search */}
+          {/* Contact Us Tab */}
+          {activeTab === 'contact-us' && (
+            <div style={{ height: "calc(100vh - 180px)" }} className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
+              {/* Filters */}
               <div className="flex items-center gap-4 mb-6 flex-shrink-0">
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    placeholder="Search terms..."
-                    value={termsSearchTerm}
-                    onChange={(e) => setTermsSearchTerm(e.target.value)}
+                    placeholder="Search submissions..."
+                    value={contactUsSearchTerm}
+                    onChange={(e) => setContactUsSearchTerm(e.target.value)}
                     className="pl-9"
                   />
                 </div>
+                <div className="w-40">
+                  <Select value={contactUsStatusFilter} onValueChange={setContactUsStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="PENDING">Pending</SelectItem>
+                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                      <SelectItem value="RESOLVED">Resolved</SelectItem>
+                      <SelectItem value="CLOSED">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="text-sm text-gray-400">
-                  {terms.length} term{terms.length !== 1 ? 's' : ''} found
+                  {contactUsTotal} submission{contactUsTotal !== 1 ? 's' : ''} found
                 </div>
               </div>
 
@@ -619,46 +631,45 @@ const AdminBasicSettingsView: React.FC = () => {
                 <div className="h-full overflow-auto rounded-lg border border-gray-700/50">
                   <table className="w-full">
                     <TableHeader
-                      headers={['Title', 'Version', 'Status', 'Created', 'Actions']}
+                      headers={['Name', 'Email', 'Subject', 'Status', 'Created', 'Actions']}
                     />
                     <tbody>
-                      {termsLoading ? (
+                      {contactUsLoading ? (
                         <tr>
-                          <td colSpan={5} className="text-center py-8">
+                          <td colSpan={6} className="text-center py-8">
                             <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2 text-gray-400" />
-                            <div className="text-gray-400">Loading terms...</div>
+                            <div className="text-gray-400">Loading submissions...</div>
                           </td>
                         </tr>
-                      ) : terms.length === 0 ? (
+                      ) : contactUsSubmissions.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="text-center py-8 text-gray-400">
-                            No terms found
+                          <td colSpan={6} className="text-center py-8 text-gray-400">
+                            No submissions found
                           </td>
                         </tr>
                       ) : (
-                        terms.map((term) => (
+                        contactUsSubmissions.map((submission) => (
                           <tr
-                            key={term.id}
+                            key={submission.id}
                             className="border-b border-gray-700/50 hover:bg-gray-700/20"
                           >
-                            <td className="py-3 px-4 font-medium text-white">{term.title}</td>
-                            <td className="py-3 px-4 text-gray-300">{term.version}</td>
-                            <td className="py-3 px-4">
-                              {term.isActive ? (
-                                <Badge className="bg-green-100 text-green-800">Active</Badge>
-                              ) : (
-                                <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
-                              )}
+                            <td className="py-3 px-4 font-medium text-white">
+                              {submission.name}
                             </td>
+                            <td className="py-3 px-4 text-gray-300">{submission.email}</td>
+                            <td className="py-3 px-4 text-gray-300 max-w-xs truncate">
+                              {submission.subject}
+                            </td>
+                            <td className="py-3 px-4">{getStatusBadge(submission.status)}</td>
                             <td className="py-3 px-4 text-gray-400 text-sm">
-                              {formatShortDate(term.createdAt)}
+                              {formatShortDate(submission.createdAt)}
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex gap-1">
                                 <Button
                                   onClick={() => {
-                                    setSelectedTerms(term);
-                                    setTermsDetailsDialogOpen(true);
+                                    setSelectedContactUs(submission);
+                                    setContactUsDetailsDialogOpen(true);
                                   }}
                                   variant="ghost"
                                   size="sm"
@@ -668,32 +679,18 @@ const AdminBasicSettingsView: React.FC = () => {
                                   <Eye className="w-4 h-4" />
                                 </Button>
                                 <Button
-                                  onClick={() => openTermsEditDialog(term)}
+                                  onClick={() => openContactUsUpdateDialog(submission)}
                                   variant="outline"
                                   size="sm"
                                   className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
-                                  title="Edit"
+                                  title="Update"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button
-                                  onClick={() => handleToggleTermsActive(term)}
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={actionLoading}
-                                  className="h-8 w-8 p-0 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-200"
-                                  title={term.isActive ? 'Deactivate' : 'Activate'}
-                                >
-                                  {term.isActive ? (
-                                    <ToggleRight className="h-4 w-4" />
-                                  ) : (
-                                    <ToggleLeft className="h-4 w-4" />
-                                  )}
-                                </Button>
-                                <Button
                                   onClick={() => {
-                                    setSelectedTerms(term);
-                                    setTermsDeleteDialogOpen(true);
+                                    setSelectedContactUs(submission);
+                                    setContactUsDeleteDialogOpen(true);
                                   }}
                                   variant="outline"
                                   size="sm"
@@ -713,6 +710,7 @@ const AdminBasicSettingsView: React.FC = () => {
               </div>
             </div>
           )}
+
 
           {/* FAQs Tab */}
           {activeTab === 'faqs' && (
@@ -851,36 +849,25 @@ const AdminBasicSettingsView: React.FC = () => {
             </div>
           )}
 
-          {/* Contact Us Tab */}
-          {activeTab === 'contact-us' && (
-            <div style={{ height: "calc(100vh - 180px)" }} className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
-              {/* Filters */}
+
+          {/* Terms & Conditions Tab */}
+          {activeTab === 'terms' && (
+            <div
+              style={{ height: "calc(100vh - 180px)" }}
+              className="bg-gray-800 rounded-lg p-6 h-full flex flex-col">
+              {/* Search */}
               <div className="flex items-center gap-4 mb-6 flex-shrink-0">
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    placeholder="Search submissions..."
-                    value={contactUsSearchTerm}
-                    onChange={(e) => setContactUsSearchTerm(e.target.value)}
+                    placeholder="Search terms..."
+                    value={termsSearchTerm}
+                    onChange={(e) => setTermsSearchTerm(e.target.value)}
                     className="pl-9"
                   />
                 </div>
-                <div className="w-40">
-                  <Select value={contactUsStatusFilter} onValueChange={setContactUsStatusFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="PENDING">Pending</SelectItem>
-                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                      <SelectItem value="RESOLVED">Resolved</SelectItem>
-                      <SelectItem value="CLOSED">Closed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="text-sm text-gray-400">
-                  {contactUsTotal} submission{contactUsTotal !== 1 ? 's' : ''} found
+                  {terms.length} term{terms.length !== 1 ? 's' : ''} found
                 </div>
               </div>
 
@@ -889,45 +876,46 @@ const AdminBasicSettingsView: React.FC = () => {
                 <div className="h-full overflow-auto rounded-lg border border-gray-700/50">
                   <table className="w-full">
                     <TableHeader
-                      headers={['Name', 'Email', 'Subject', 'Status', 'Created', 'Actions']}
+                      headers={['Title', 'Version', 'Status', 'Created', 'Actions']}
                     />
                     <tbody>
-                      {contactUsLoading ? (
+                      {termsLoading ? (
                         <tr>
-                          <td colSpan={6} className="text-center py-8">
+                          <td colSpan={5} className="text-center py-8">
                             <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2 text-gray-400" />
-                            <div className="text-gray-400">Loading submissions...</div>
+                            <div className="text-gray-400">Loading terms...</div>
                           </td>
                         </tr>
-                      ) : contactUsSubmissions.length === 0 ? (
+                      ) : terms.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="text-center py-8 text-gray-400">
-                            No submissions found
+                          <td colSpan={5} className="text-center py-8 text-gray-400">
+                            No terms found
                           </td>
                         </tr>
                       ) : (
-                        contactUsSubmissions.map((submission) => (
+                        terms.map((term) => (
                           <tr
-                            key={submission.id}
+                            key={term.id}
                             className="border-b border-gray-700/50 hover:bg-gray-700/20"
                           >
-                            <td className="py-3 px-4 font-medium text-white">
-                              {submission.name}
+                            <td className="py-3 px-4 font-medium text-white">{term.title}</td>
+                            <td className="py-3 px-4 text-gray-300">{term.version}</td>
+                            <td className="py-3 px-4">
+                              {term.isActive ? (
+                                <Badge className="bg-green-100 text-green-800">Active</Badge>
+                              ) : (
+                                <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
+                              )}
                             </td>
-                            <td className="py-3 px-4 text-gray-300">{submission.email}</td>
-                            <td className="py-3 px-4 text-gray-300 max-w-xs truncate">
-                              {submission.subject}
-                            </td>
-                            <td className="py-3 px-4">{getStatusBadge(submission.status)}</td>
                             <td className="py-3 px-4 text-gray-400 text-sm">
-                              {formatShortDate(submission.createdAt)}
+                              {formatShortDate(term.createdAt)}
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex gap-1">
                                 <Button
                                   onClick={() => {
-                                    setSelectedContactUs(submission);
-                                    setContactUsDetailsDialogOpen(true);
+                                    setSelectedTerms(term);
+                                    setTermsDetailsDialogOpen(true);
                                   }}
                                   variant="ghost"
                                   size="sm"
@@ -937,18 +925,32 @@ const AdminBasicSettingsView: React.FC = () => {
                                   <Eye className="w-4 h-4" />
                                 </Button>
                                 <Button
-                                  onClick={() => openContactUsUpdateDialog(submission)}
+                                  onClick={() => openTermsEditDialog(term)}
                                   variant="outline"
                                   size="sm"
                                   className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
-                                  title="Update"
+                                  title="Edit"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button
+                                  onClick={() => handleToggleTermsActive(term)}
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={actionLoading}
+                                  className="h-8 w-8 p-0 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-200"
+                                  title={term.isActive ? 'Deactivate' : 'Activate'}
+                                >
+                                  {term.isActive ? (
+                                    <ToggleRight className="h-4 w-4" />
+                                  ) : (
+                                    <ToggleLeft className="h-4 w-4" />
+                                  )}
+                                </Button>
+                                <Button
                                   onClick={() => {
-                                    setSelectedContactUs(submission);
-                                    setContactUsDeleteDialogOpen(true);
+                                    setSelectedTerms(term);
+                                    setTermsDeleteDialogOpen(true);
                                   }}
                                   variant="outline"
                                   size="sm"
