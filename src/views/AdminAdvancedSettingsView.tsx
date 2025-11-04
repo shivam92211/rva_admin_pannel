@@ -68,7 +68,7 @@ const AdminAdvancedSettingsView: React.FC = () => {
   const [feeDetailsDialogOpen, setFeeDetailsDialogOpen] = useState(false);
   const [feeDeleteDialogOpen, setFeeDeleteDialogOpen] = useState(false);
   const [selectedFee, setSelectedFee] = useState<PlatformFeeTier | null>(null);
-  const [feeForm, setFeeForm] = useState<CreateFeeTierDto & { id?: string }>({
+  const [feeForm, setFeeForm] = useState<CreateFeeTierDto & { id?: string; }>({
     feeType: FeeType.SPOT_TRADE,
     name: '',
     description: '',
@@ -96,7 +96,7 @@ const AdminAdvancedSettingsView: React.FC = () => {
   const [geoRuleDetailsDialogOpen, setGeoRuleDetailsDialogOpen] = useState(false);
   const [geoRuleDeleteDialogOpen, setGeoRuleDeleteDialogOpen] = useState(false);
   const [selectedGeoRule, setSelectedGeoRule] = useState<GeoFencingRule | null>(null);
-  const [geoRuleForm, setGeoRuleForm] = useState<CreateGeoFencingRuleDto & { id?: string }>({
+  const [geoRuleForm, setGeoRuleForm] = useState<CreateGeoFencingRuleDto & { id?: string; }>({
     countryCode: '',
     countryName: '',
     isAllowed: true,
@@ -642,33 +642,30 @@ const AdminAdvancedSettingsView: React.FC = () => {
           <div className="bg-gray-800 rounded-lg p-1 inline-flex space-x-1">
             <button
               onClick={() => setActiveTab('fees')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                activeTab === 'fees'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'fees'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
+                }`}
             >
               <DollarSign className="h-4 w-4" />
               Fee Tiers
             </button>
             <button
               onClick={() => setActiveTab('geo-rules')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                activeTab === 'geo-rules'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'geo-rules'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
+                }`}
             >
               <Globe className="h-4 w-4" />
               Geo-Fencing Rules
             </button>
             <button
               onClick={() => setActiveTab('geo-logs')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                activeTab === 'geo-logs'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${activeTab === 'geo-logs'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
+                }`}
             >
               <Activity className="h-4 w-4" />
               Access Logs
@@ -1329,6 +1326,9 @@ const AdminAdvancedSettingsView: React.FC = () => {
                   onChange={(e) => setFeeForm({ ...feeForm, currency: e.target.value })}
                   placeholder="e.g., BTC, ETH"
                 />
+                <p className="text-xs text-gray-400">
+                  {adminFeesApi.feeRateToPercentage(feeForm.feeRate).toFixed(2)}%
+                </p>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="tierOrder">Tier Order</Label>
