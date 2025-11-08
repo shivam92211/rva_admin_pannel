@@ -4,6 +4,7 @@ import DefaultLayout from '../layouts/DefaultLayout';
 import DashboardView from '../views/DashboardView';
 import { Login } from '../views/Login';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
+import AdminCommunicationView from '@/views/AdminBasicSettingsView';
 
 // Lazy load components
 const SubAccountsView = React.lazy(() => import('../views/SubAccountsView'));
@@ -15,7 +16,6 @@ const UsersView = React.lazy(() => import('../views/UsersView'));
 const KycSubmissionsView = React.lazy(() => import('../views/KycSubmissionsView'));
 const TradingPairsView = React.lazy(() => import('../views/TradingPairsView'));
 const AdminManagementView = React.lazy(() => import('../views/AdminManagementView'));
-const AdminBasicSettingsView = React.lazy(() => import('../views/AdminBasicSettingsView'));
 const AdminAdvancedSettingsView = React.lazy(() => import('../views/AdminAdvancedSettingsView'));
 
 // Protected layout wrapper component
@@ -87,8 +87,8 @@ export const router = createHashRouter([
         element: <AdminManagementView />
       },
       {
-        path: '/basic-settings',
-        element: <AdminBasicSettingsView />
+        path: '/communication',
+        element: <AdminCommunicationView />
       },
       {
         path: '/advanced-settings',

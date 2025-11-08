@@ -17,6 +17,7 @@ import {
   Shield,
   Settings,
   SlidersHorizontal,
+  MessageSquare
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 
@@ -96,9 +97,9 @@ const navMain = [
     icon: Shield,
   },
   {
-    title: "Basic Settings",
-    url: "/basic-settings",
-    icon: Settings,
+    title: "Communication",
+    url: "/communication",
+    icon: MessageSquare,
   },
   {
     title: "Advanced Settings",

@@ -50,7 +50,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 
-const AdminBasicSettingsView: React.FC = () => {
+const AdminCommunicationView: React.FC = () => {
   const [, setSnackbarMsg] = useSnackbarMsg();
   const [activeTab, setActiveTab] = useState('contact-us');
 
@@ -531,7 +531,7 @@ const AdminBasicSettingsView: React.FC = () => {
   return (
     <div className="flex flex-col h-full">
       <PageHeader
-        title="Basic Settings"
+        title="Communication"
         description="Manage terms & conditions, FAQs, and contact us submissions"
       >
         <div className="flex gap-2 my-0">
@@ -1543,4 +1543,4 @@ const AdminBasicSettingsView: React.FC = () => {
   );
 };
 
-export default AdminBasicSettingsView;
+export default AdminCommunicationView;
