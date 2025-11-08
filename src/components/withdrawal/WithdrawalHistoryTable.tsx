@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useWithdrawalStore } from '@/store/withdrawal';
 import { WithdrawalStatusBadge } from './WithdrawalStatusBadge';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search, RefreshCw, Eye, EyeOff, ExternalLink, Play } from 'lucide-react';
+import { Search, RefreshCw, Eye, EyeOff, ExternalLink, Play, X, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import RefreshButton from '../common/RefreshButton';
 import CopyButton from '../common/CopyButton';
@@ -29,11 +30,17 @@ export const WithdrawalHistoryTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showSensitiveData, setShowSensitiveData] = useState(false);
-  
+
   // Trigger withdrawal confirmation state
   const [triggerConfirmOpen, setTriggerConfirmOpen] = useState(false);
   const [selectedWithdrawalForTrigger, setSelectedWithdrawalForTrigger] = useState<typeof withdrawals[0] | null>(null);
   const [isTriggeringWithdrawal, setIsTriggeringWithdrawal] = useState(false);
+
+  // Reject withdrawal confirmation state
+  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
+  const [selectedWithdrawalForReject, setSelectedWithdrawalForReject] = useState<typeof withdrawals[0] | null>(null);
+  const [isRejectingWithdrawal, setIsRejectingWithdrawal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   // Display helper functions for GDPR compliance
   const displayEmail = (email: string | undefined | null) => {
@@ -56,6 +63,18 @@ export const WithdrawalHistoryTable: React.FC = () => {
   const canTriggerWithdrawal = (status: string) => {
     const upperStatus = status?.toUpperCase();
     return ['PENDING', 'PROCESSING', 'CONFIRMING'].includes(upperStatus);
+  };
+
+  // Check if withdrawal can be rejected (pending statuses)
+  const canRejectWithdrawal = (status: string) => {
+    const upperStatus = status?.toUpperCase();
+    return ['PENDING', 'PROCESSING', 'CONFIRMING'].includes(upperStatus);
+  };
+
+  // Check if withdrawal is eligible for auto-approval (under $20)
+  const isAutoApprovalEligible = (amount: string) => {
+    const numAmount = parseFloat(amount);
+    return !isNaN(numAmount) && numAmount < 20;
   };
 
   // Filter withdrawals based on search and filters
@@ -91,7 +110,7 @@ export const WithdrawalHistoryTable: React.FC = () => {
     try {
       setIsTriggeringWithdrawal(true);
       const result = await withdrawalApi.triggerWithdrawalForId(selectedWithdrawalForTrigger.id);
-      
+
       setSnackbarMsg({
         msg: result.message || 'Withdrawal triggered successfully',
         type: 'success'
@@ -99,7 +118,7 @@ export const WithdrawalHistoryTable: React.FC = () => {
 
       // Refresh the withdrawals data
       fetchWithdrawals();
-      
+
     } catch (error: any) {
       console.error('Failed to trigger withdrawal:', error);
       setSnackbarMsg({
@@ -110,6 +129,50 @@ export const WithdrawalHistoryTable: React.FC = () => {
       setIsTriggeringWithdrawal(false);
       setTriggerConfirmOpen(false);
       setSelectedWithdrawalForTrigger(null);
+    }
+  };
+
+  const handleRejectWithdrawalClick = (withdrawal: typeof withdrawals[0]) => {
+    setSelectedWithdrawalForReject(withdrawal);
+    setRejectionReason('');
+    setRejectConfirmOpen(true);
+  };
+
+  const handleRejectWithdrawal = async () => {
+    if (!selectedWithdrawalForReject) return;
+
+    // Validate rejection reason
+    if (!rejectionReason.trim()) {
+      setSnackbarMsg({
+        msg: 'Please provide a reason for rejecting this withdrawal',
+        type: 'error'
+      });
+      return;
+    }
+
+    try {
+      setIsRejectingWithdrawal(true);
+      const result = await withdrawalApi.rejectWithdrawalForId(selectedWithdrawalForReject.id, rejectionReason.trim());
+
+      setSnackbarMsg({
+        msg: result.message || 'Withdrawal rejected successfully',
+        type: 'success'
+      });
+
+      // Refresh the withdrawals data
+      fetchWithdrawals();
+
+    } catch (error: any) {
+      console.error('Failed to reject withdrawal:', error);
+      setSnackbarMsg({
+        msg: `Failed to reject withdrawal: ${error.response?.data?.message || error.message || 'Unknown error'}`,
+        type: 'error'
+      });
+    } finally {
+      setIsRejectingWithdrawal(false);
+      setRejectConfirmOpen(false);
+      setSelectedWithdrawalForReject(null);
+      setRejectionReason('');
     }
   };
 
@@ -238,11 +301,21 @@ export const WithdrawalHistoryTable: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="text-sm font-mono text-red-300">
-                        {withdrawal.amount && !isNaN(parseFloat(withdrawal.amount))
-                          ? `-${parseFloat(withdrawal.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`
-                          : 'N/A'}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-mono text-red-300">
+                          {withdrawal.amount && !isNaN(parseFloat(withdrawal.amount))
+                            ? `-${parseFloat(withdrawal.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`
+                            : 'N/A'}
+                        </span>
+                        {isAutoApprovalEligible(withdrawal.amount) &&
+                          withdrawal.status.toUpperCase() === 'PENDING'
+                          && (
+                            <span className="text-xs text-green-400 flex items-center gap-1">
+                              <Check className="w-3 h-3" />
+                              Set for auto-approval
+                            </span>
+                          )}
+                      </div>
                     </td>
                     <td className="py-3 px-4">
                       <span className="text-xs text-gray-300">
@@ -281,10 +354,22 @@ export const WithdrawalHistoryTable: React.FC = () => {
                             variant="outline"
                             size="sm"
                             className="text-green-400 border-green-600 hover:bg-green-600 hover:text-white"
-                            title="Trigger Withdrawal"
-                            disabled={isTriggeringWithdrawal}
+                            title="Trigger Withdrawal Instantly"
+                            disabled={isTriggeringWithdrawal || isRejectingWithdrawal}
                           >
                             <Play className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {canRejectWithdrawal(withdrawal.status) && (
+                          <Button
+                            onClick={() => handleRejectWithdrawalClick(withdrawal)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-400 border-red-600 hover:bg-red-600 hover:text-white"
+                            title="Reject Withdrawal"
+                            disabled={isTriggeringWithdrawal || isRejectingWithdrawal}
+                          >
+                            <X className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
@@ -456,9 +541,9 @@ export const WithdrawalHistoryTable: React.FC = () => {
                   <div>
                     <span className="text-gray-600 dark:text-gray-400">Amount:</span>
                     <div className="font-mono text-red-600">
-                      -{parseFloat(selectedWithdrawalForTrigger.amount).toLocaleString(undefined, { 
-                        minimumFractionDigits: 2, 
-                        maximumFractionDigits: 8 
+                      -{parseFloat(selectedWithdrawalForTrigger.amount).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 8
                       })} ETH
                     </div>
                   </div>
@@ -476,15 +561,15 @@ export const WithdrawalHistoryTable: React.FC = () => {
             </div>
           )}
           <div className="flex justify-end gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setTriggerConfirmOpen(false)}
               disabled={isTriggeringWithdrawal}
             >
               Cancel
             </Button>
-            <Button 
-              variant="default" 
+            <Button
+              variant="default"
               onClick={handleTriggerWithdrawal}
               disabled={isTriggeringWithdrawal}
               className="bg-green-600 hover:bg-green-700"
@@ -498,6 +583,96 @@ export const WithdrawalHistoryTable: React.FC = () => {
                 <>
                   <Play className="h-4 w-4 mr-2" />
                   Trigger Withdrawal
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Withdrawal Confirmation Dialog */}
+      <Dialog open={rejectConfirmOpen} onOpenChange={setRejectConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Withdrawal</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to reject this withdrawal? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedWithdrawalForReject && (
+            <div className="space-y-4">
+              <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Withdrawal ID:</span>
+                    <div className="font-mono text-xs break-all">{selectedWithdrawalForReject.id}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">User:</span>
+                    <div>{cipherEmail(selectedWithdrawalForReject.user?.email)}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Amount:</span>
+                    <div className="font-mono text-red-600">
+                      -{parseFloat(selectedWithdrawalForReject.amount).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 8
+                      })} ETH
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                    <div>
+                      <WithdrawalStatusBadge status={selectedWithdrawalForReject.status} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Rejection Reason <span className="text-red-500">*</span>
+                </label>
+                <Textarea
+                  placeholder="Please provide a detailed reason for rejecting this withdrawal..."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="min-h-[100px] resize-none"
+                  disabled={isRejectingWithdrawal}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  This reason will be logged and may be communicated to the user.
+                </p>
+              </div>
+
+              <p className="text-sm text-red-600 dark:text-red-400">
+                ⚠️ Warning: Rejecting this withdrawal will permanently deny the transaction. The user will need to submit a new withdrawal request.
+              </p>
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setRejectConfirmOpen(false)}
+              disabled={isRejectingWithdrawal}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleRejectWithdrawal}
+              disabled={isRejectingWithdrawal}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isRejectingWithdrawal ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Rejecting...
+                </>
+              ) : (
+                <>
+                  <X className="h-4 w-4 mr-2" />
+                  Reject Withdrawal
                 </>
               )}
             </Button>

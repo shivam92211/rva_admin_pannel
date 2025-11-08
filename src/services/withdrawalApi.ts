@@ -140,6 +140,10 @@ class WithdrawalAPI {
     const response = await this.client.post<{ message: string; }>(`/api/v1/withdrawals/${id}/process`);
     return response.data;
   }
+  async rejectWithdrawalForId(id: string, reason: string): Promise<{ message: string; }> {
+    const response = await this.client.post<{ message: string; }>(`/api/v1/withdrawals/${id}/reject`, { reason });
+    return response.data;
+  }
 }
 
 export const withdrawalApi = new WithdrawalAPI();
