@@ -1,0 +1,30 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - nvm use 22
+        - npm i -g bun
+        - bun i
+        # Branch-specific .env injection
+        - echo "Building for branch: $AWS_BRANCH"
+        - |
+          if [ "$AWS_BRANCH" = "prod" ]; then
+            cp .env.production .env
+          elif [ "$AWS_BRANCH" = "main" ]; then
+            cp .env.staging .env
+          else
+            echo "No specific env file for branch '$AWS_BRANCH'. Using default .env if present."
+          fi
+    build:
+      commands:
+        - echo "Active env file:"
+        - cat .env || echo "No .env found!"
+        - bun run build
+  artifacts:
+    baseDirectory: dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
