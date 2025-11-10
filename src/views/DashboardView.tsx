@@ -76,7 +76,7 @@ const DashboardView: React.FC = () => {
       icon: ArrowDownLeft,
       description: 'Successful deposits',
       color: 'text-green-600',
-      subValue: `Total: ${parseFloat(stats.totalDepositAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} ETH`
+      subValue: `Total: ${parseFloat(stats.totalDepositAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} USD`
     },
     {
       title: 'Withdrawals',
@@ -84,7 +84,7 @@ const DashboardView: React.FC = () => {
       icon: ArrowUpRight,
       description: 'Completed withdrawals',
       color: 'text-red-600',
-      subValue: `Total: ${parseFloat(stats.totalWithdrawalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} ETH`
+      subValue: `Total: ${parseFloat(stats.totalWithdrawalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} USD`
     },
     {
       title: 'Orders Placed (24h)',
