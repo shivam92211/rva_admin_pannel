@@ -9,7 +9,7 @@ frontend:
         # Branch-specific .env injection
         - 'echo "Building for branch -> $AWS_BRANCH"'
         - |
-          if [ "$AWS_BRANCH" = "prod" ]; then
+          if [ "$AWS_BRANCH" = "production" ]; then
             cp .env.production .env
           elif [ "$AWS_BRANCH" = "main" ]; then
             cp .env.staging .env
