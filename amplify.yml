@@ -7,14 +7,27 @@ frontend:
         - 'npm i -g bun'
         - 'bun i'
         # Branch-specific .env injection
-        - 'echo "Building for branch -> $AWS_BRANCH"'
         - |
-          if [ "$AWS_BRANCH" = "production" ]; then
+          echo "Building for branch -> $AWS_BRANCH"
+          echo "Git branch: $(git branch --show-current || echo 'unknown')"
+
+          # Determine the branch (try AWS_BRANCH first, then git)
+          BRANCH="${AWS_BRANCH:-$(git branch --show-current)}"
+          echo "Detected branch: $BRANCH"
+
+          if [ "$BRANCH" = "production" ]; then
+            echo "Using production environment"
             cp .env.production .env
-          elif [ "$AWS_BRANCH" = "main" ]; then
+          elif [ "$BRANCH" = "main" ]; then
+            echo "Using staging environment"
             cp .env.staging .env
           else
-            echo "No specific env file for branch $AWS_BRANCH. Using default .env if present."
+            echo "No specific env file for branch $BRANCH"
+            if [ -f .env ]; then
+              echo "Using existing .env file"
+            else
+              echo "WARNING: No .env file found!"
+            fi
           fi
     build:
       commands:
