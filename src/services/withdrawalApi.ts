@@ -16,6 +16,7 @@ export interface Withdrawal {
   google2FAVerified: boolean;
   createdAt: string;
   updatedAt: string;
+  note: string | null;
   user?: {
     id: string;
     email: string;

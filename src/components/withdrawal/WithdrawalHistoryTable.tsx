@@ -333,7 +333,7 @@ export const WithdrawalHistoryTable: React.FC = () => {
                           : '0.00'}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 flex gap-2">
                       <code className="text-xs text-gray-300">
                         {truncateAddress(withdrawal.toAddress)}
                       </code>
@@ -480,6 +480,11 @@ export const WithdrawalHistoryTable: React.FC = () => {
                   <div className="mt-1">
                     <WithdrawalStatusBadge status={selectedWithdrawal.status} />
                   </div>
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium text-gray-400">Notes</label>
+                  <p className="font-mono text-sm break-all">{displayText(selectedWithdrawal.note!)}
+                  </p>
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm font-medium text-gray-400">Destination Address</label>
