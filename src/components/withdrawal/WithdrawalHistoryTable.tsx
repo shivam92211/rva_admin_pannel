@@ -15,6 +15,7 @@ import { DialogDescription } from '@radix-ui/react-dialog';
 import TableHeader from '../common/TableHeader';
 import { withdrawalApi } from '@/services/withdrawalApi';
 import { useSnackbarMsg } from '@/hooks/snackbar';
+import { ChainId, getSupportedChain } from '@/utils/chains';
 
 export const WithdrawalHistoryTable: React.FC = () => {
   const {
@@ -187,10 +188,18 @@ export const WithdrawalHistoryTable: React.FC = () => {
     return `${address.slice(0, 8)}...${address.slice(-8)}`;
   };
 
-  const getBlockExplorerUrl = (txHash: string) => {
-    if (!txHash) return '#';
-    // Default to Etherscan - could be enhanced based on chain detection
-    return `https://etherscan.io/tx/${txHash}`;
+  const getBlockExplorerUrl = (withdrawal: typeof withdrawals[0]) => {
+    if (!withdrawal.txHash) return '#';
+    const supportedChain = getSupportedChain(withdrawal.beneficiary?.chain as ChainId);
+    if (!supportedChain) return '#';
+    return supportedChain.hashExplorer.replace('<hash>', withdrawal.txHash);
+  };
+
+  const getAddressExplorerUrl = (withdrawal: typeof withdrawals[0]) => {
+    if (!withdrawal.toAddress) return '#';
+    const supportedChain = getSupportedChain(withdrawal.beneficiary?.chain as ChainId);
+    if (!supportedChain) return '#';
+    return supportedChain.addressExplorer.replace('<address>', withdrawal.toAddress);
   };
 
   if (isLoading && withdrawals.length === 0) {
@@ -278,7 +287,7 @@ export const WithdrawalHistoryTable: React.FC = () => {
                         </code>
                         {withdrawal.txHash && (
                           <a
-                            href={getBlockExplorerUrl(withdrawal.txHash)}
+                            href={getBlockExplorerUrl(withdrawal)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-gray-400 hover:text-blue-400 transition-colors"
@@ -328,6 +337,16 @@ export const WithdrawalHistoryTable: React.FC = () => {
                       <code className="text-xs text-gray-300">
                         {truncateAddress(withdrawal.toAddress)}
                       </code>
+                      {withdrawal.toAddress && (
+                        <a
+                          href={getAddressExplorerUrl(withdrawal)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-400 hover:text-blue-400 transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
                     </td>
                     <td className="py-3 px-4">
                       <WithdrawalStatusBadge status={withdrawal.status} />
@@ -502,7 +521,7 @@ export const WithdrawalHistoryTable: React.FC = () => {
               {selectedWithdrawal.txHash && (
                 <div className="flex justify-between pt-4 border-t">
                   <a
-                    href={getBlockExplorerUrl(selectedWithdrawal.txHash)}
+                    href={getBlockExplorerUrl(selectedWithdrawal)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors"
