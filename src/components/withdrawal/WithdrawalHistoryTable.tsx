@@ -285,7 +285,7 @@ export const WithdrawalHistoryTable: React.FC = () => {
                         <code className="text-sm text-blue-300 bg-gray-700/50 px-2 py-1 rounded">
                           {truncateId(withdrawal.id)}
                         </code>
-                        {withdrawal.txHash && (
+                        {/* {withdrawal.txHash && (
                           <a
                             href={getBlockExplorerUrl(withdrawal)}
                             target="_blank"
@@ -294,7 +294,7 @@ export const WithdrawalHistoryTable: React.FC = () => {
                           >
                             <ExternalLink className="w-3 h-3" />
                           </a>
-                        )}
+                        )} */}
                       </div>
                     </td>
                     <td className="py-3 px-4">
@@ -506,14 +506,14 @@ export const WithdrawalHistoryTable: React.FC = () => {
                     </p>
                   </div>
                 )}
-                <div>
+                {/* <div>
                   <label className="text-sm font-medium text-gray-400">Email Verified</label>
                   <p className="text-sm">{selectedWithdrawal.emailVerified ? 'Yes' : 'No'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-400">2FA Verified</label>
                   <p className="text-sm">{selectedWithdrawal.google2FAVerified ? 'Yes' : 'No'}</p>
-                </div>
+                </div> */}
                 <div>
                   <label className="text-sm font-medium text-gray-400">Created At</label>
                   <p className="text-sm">{format(new Date(selectedWithdrawal.createdAt), 'MMM dd, yyyy HH:mm:ss')}</p>
@@ -523,7 +523,7 @@ export const WithdrawalHistoryTable: React.FC = () => {
                   <p className="text-sm">{format(new Date(selectedWithdrawal.updatedAt), 'MMM dd, yyyy HH:mm:ss')}</p>
                 </div>
               </div>
-              {selectedWithdrawal.txHash && (
+              {/* {selectedWithdrawal.txHash && (
                 <div className="flex justify-between pt-4 border-t">
                   <a
                     href={getBlockExplorerUrl(selectedWithdrawal)}
@@ -535,7 +535,7 @@ export const WithdrawalHistoryTable: React.FC = () => {
                     <span>View on Block Explorer</span>
                   </a>
                 </div>
-              )}
+              )} */}
             </div>
           )}
         </DialogContent>
