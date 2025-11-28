@@ -38,6 +38,7 @@
     "react-simple-snackbar": "^1.1.11",
     "recoil": "^0.7.7",
     "recoil-persist": "^5.1.0",
+    "semver": "^7.7.3",
     "tailwind-merge": "^3.3.1",
     "zustand": "^5.0.2"
   },
