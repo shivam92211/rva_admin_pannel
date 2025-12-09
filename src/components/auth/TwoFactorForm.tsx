@@ -13,6 +13,11 @@ export const TwoFactorForm: React.FC<TwoFactorFormProps> = ({ onSuccess, onCance
   const { verify2FA, isLoading, error, clearError } = useAuthStore();
 
   useEffect(() => {
+    console.log('TwoFactorForm: Component mounted');
+    console.log('TwoFactorForm: verify2FA function available:', typeof verify2FA);
+    console.log('TwoFactorForm: Current error:', error);
+    console.log('TwoFactorForm: Check localStorage for temp_2fa_token:', !!localStorage.getItem('temp_2fa_token'));
+
     // Focus first input on mount
     inputRefs.current[0]?.focus();
   }, []);
@@ -56,18 +61,24 @@ export const TwoFactorForm: React.FC<TwoFactorFormProps> = ({ onSuccess, onCance
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('TwoFactorForm: handleSubmit called');
     clearError();
 
     const fullCode = code.join('');
+    console.log('TwoFactorForm: fullCode =', fullCode, 'length =', fullCode.length);
+
     if (fullCode.length !== 6) {
+      console.log('TwoFactorForm: Code length is not 6, returning');
       return;
     }
 
     try {
+      console.log('TwoFactorForm: Calling verify2FA with code:', fullCode);
       await verify2FA(fullCode);
+      console.log('TwoFactorForm: verify2FA completed successfully');
       onSuccess?.();
     } catch (error) {
-      console.error('2FA verification error:', error);
+      console.error('TwoFactorForm: 2FA verification error:', error);
       // Clear the code inputs on error
       setCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();

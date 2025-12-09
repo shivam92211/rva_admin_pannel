@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { SetupTwoFactorModal } from "./auth/SetupTwoFactorModal";
-import { DisableTwoFactorModal } from "./auth/DisableTwoFactorModal";
 
 import {
   Sidebar,
@@ -118,7 +117,6 @@ export function AppSidebar() {
   const { admin, logout } = useAuthStore();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [show2FASetup, setShow2FASetup] = useState(false);
-  const [show2FADisable, setShow2FADisable] = useState(false);
 
   const handleLogoutClick = () => {
     setShowLogoutDialog(true);
@@ -136,11 +134,7 @@ export function AppSidebar() {
   };
 
   const handle2FAClick = () => {
-    if (admin?.twoFactorEnabled) {
-      setShow2FADisable(true);
-    } else {
-      setShow2FASetup(true);
-    }
+    setShow2FASetup(true);
   };
 
   const handle2FASetupClose = () => {
@@ -148,15 +142,6 @@ export function AppSidebar() {
   };
 
   const handle2FASetupSuccess = () => {
-    // Refresh page to update admin data
-    window.location.reload();
-  };
-
-  const handle2FADisableClose = () => {
-    setShow2FADisable(false);
-  };
-
-  const handle2FADisableSuccess = () => {
     // Refresh page to update admin data
     window.location.reload();
   };
@@ -213,16 +198,18 @@ export function AppSidebar() {
 
       <SidebarFooter className="w-full">
         <SidebarMenu className="w-full">
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={handle2FAClick}
-              tooltip={!open ? (admin?.twoFactorEnabled ? "2FA Enabled" : "Enable 2FA") : undefined}
-              className={`w-full ${admin?.twoFactorEnabled ? 'text-green-600 hover:text-green-700 hover:bg-green-50' : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'}`}
-            >
-              <ShieldCheck className="h-4 w-4" />
-              {open && <span>{admin?.twoFactorEnabled ? '2FA Enabled' : 'Enable 2FA'}</span>}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {!admin?.twoFactorEnabled && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={handle2FAClick}
+                tooltip={!open ? "Enable 2FA" : undefined}
+                className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                {open && <span>Enable 2FA</span>}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={handleLogoutClick}
@@ -277,13 +264,6 @@ export function AppSidebar() {
         open={show2FASetup}
         onClose={handle2FASetupClose}
         onSuccess={handle2FASetupSuccess}
-      />
-
-      {/* 2FA Disable Modal */}
-      <DisableTwoFactorModal
-        open={show2FADisable}
-        onClose={handle2FADisableClose}
-        onSuccess={handle2FADisableSuccess}
       />
     </Sidebar>
   );
