@@ -4,9 +4,9 @@ import { SetterOrUpdater } from 'recoil';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL!;
 
 // Global snackbar setter function
-let globalSnackbarSetter: SetterOrUpdater<{ msg: string, type?: "info" | "error" | "warn" | "success" } | null> | null = null;
+let globalSnackbarSetter: SetterOrUpdater<{ msg: string, type?: "info" | "error" | "warn" | "success"; } | null> | null = null;
 
-export const setGlobalSnackbarSetter = (setter: SetterOrUpdater<{ msg: string, type?: "info" | "error" | "warn" | "success" } | null>) => {
+export const setGlobalSnackbarSetter = (setter: SetterOrUpdater<{ msg: string, type?: "info" | "error" | "warn" | "success"; } | null>) => {
   globalSnackbarSetter = setter;
 };
 
@@ -28,6 +28,7 @@ export interface Admin {
   role: string;
   permissions: string[];
   isActive: boolean;
+  twoFactorEnabled: boolean;
   lastLoginAt: string | null;
   profilePicture: string | null;
   phone: string | null;
@@ -44,7 +45,7 @@ export interface LoginResponse {
 
 export interface TwoFactorRequiredResponse {
   requires2FA: true;
-  adminId: string;
+  refresh_token: string;
 }
 
 export class AuthService {
@@ -89,6 +90,9 @@ export class AuthService {
 
       // Check if 2FA is required
       if ('requires2FA' in response.data && response.data.requires2FA) {
+        // Store temporary refresh token for 2FA verification
+        this.refreshToken = response.data.refresh_token;
+        localStorage.setItem('temp_2fa_token', response.data.refresh_token);
         return response.data;
       }
 
@@ -113,11 +117,18 @@ export class AuthService {
     }
   }
 
-  async verify2FALogin(adminId: string, code: string): Promise<LoginResponse> {
+  async verify2FALogin(code: string): Promise<LoginResponse> {
     try {
+      // Get the temporary refresh token from localStorage
+      const tempRefreshToken = localStorage.getItem('temp_2fa_token') || this.refreshToken;
+
+      if (!tempRefreshToken) {
+        throw new Error('No temporary token found. Please login again.');
+      }
+
       const response = await axios.post<LoginResponse>(
-        `${API_BASE_URL}/api/v1/auth/login-2fa`,
-        { adminId, code },
+        `${API_BASE_URL}/api/v1/auth/portal-auth-gate-2fa`,
+        { refresh_token: tempRefreshToken, code },
         {
           withCredentials: true,
           headers: {
@@ -137,6 +148,9 @@ export class AuthService {
       localStorage.setItem('admin_data', JSON.stringify(admin));
       localStorage.setItem('login_time', Date.now().toString());
       localStorage.setItem('last_activity', Date.now().toString());
+
+      // Remove temporary 2FA token
+      localStorage.removeItem('temp_2fa_token');
 
       // Set axios default authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
@@ -170,6 +184,7 @@ export class AuthService {
       localStorage.removeItem('admin_data');
       localStorage.removeItem('login_time');
       localStorage.removeItem('last_activity');
+      localStorage.removeItem('temp_2fa_token');
       delete axios.defaults.headers.common['Authorization'];
     }
   }
@@ -246,7 +261,7 @@ export class AuthService {
     this.isRefreshing = true;
     this.refreshPromise = (async () => {
       try {
-        const response = await axios.post<{ access_token: string }>(
+        const response = await axios.post<{ access_token: string; }>(
           `${API_BASE_URL}/api/v1/auth/refresh`,
           { refresh_token: this.refreshToken },
           {
@@ -276,6 +291,90 @@ export class AuthService {
 
     return this.refreshPromise;
   }
+
+  // Generate 2FA secret and QR code for setup
+  async generate2FA(): Promise<{ secret: string; qrCodeUrl: string; }> {
+    try {
+      const response = await axios.post<{ secret: string; qrCodeUrl: string; }>(
+        `${API_BASE_URL}/api/v1/auth/2fa/generate`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to generate 2FA secret');
+    }
+  }
+
+  // Enable 2FA after verifying the initial code
+  async enable2FA(code: string): Promise<{ success: boolean; }> {
+    try {
+      const response = await axios.post<{ success: boolean; }>(
+        `${API_BASE_URL}/api/v1/auth/2fa/enable`,
+        { code },
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to enable 2FA');
+    }
+  }
+
+  // Disable 2FA
+  async disable2FA(): Promise<{ success: boolean; }> {
+    try {
+      const response = await axios.post<{ success: boolean; }>(
+        `${API_BASE_URL}/api/v1/auth/2fa/disable`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to disable 2FA');
+    }
+  }
+
+  // Verify 2FA code (for testing purposes)
+  async verify2FACode(code: string): Promise<{ valid: boolean; }> {
+    try {
+      const response = await axios.post<{ valid: boolean; }>(
+        `${API_BASE_URL}/api/v1/auth/2fa/verify`,
+        { code },
+        {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to verify 2FA code');
+    }
+  } 
 
   // Initialize axios interceptor for automatic token refresh on 401
   setupAxiosInterceptors(): void {
@@ -321,7 +420,6 @@ export class AuthService {
             return Promise.reject(refreshError);
           }
         }
-
         return Promise.reject(error);
       }
     );

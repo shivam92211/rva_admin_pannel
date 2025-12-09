@@ -7,7 +7,6 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   requires2FA: boolean;
-  pendingAdminId: string | null;
   login: (credentials: LoginCredentials, recaptchaToken?: string) => Promise<void>;
   verify2FA: (code: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -25,7 +24,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   error: null,
   requires2FA: false,
-  pendingAdminId: null,
 
   login: async (credentials: LoginCredentials, recaptchaToken?: string) => {
     set({ isLoading: true, error: null });
@@ -37,7 +35,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({
           isLoading: false,
           requires2FA: true,
-          pendingAdminId: response.adminId,
           error: null,
         });
         return;
@@ -50,7 +47,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         error: null,
         requires2FA: false,
-        pendingAdminId: null,
       });
       window.location.reload();
     } catch (error: any) {
@@ -60,29 +56,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         error: error.message,
         requires2FA: false,
-        pendingAdminId: null,
       });
       throw error;
     }
   },
 
   verify2FA: async (code: string) => {
-    const { pendingAdminId } = get();
-    if (!pendingAdminId) {
-      set({ error: 'No pending 2FA verification' });
-      return;
-    }
-
     set({ isLoading: true, error: null });
     try {
-      const response = await authService.verify2FALogin(pendingAdminId, code);
+      const response = await authService.verify2FALogin(code);
       set({
         isAuthenticated: true,
         admin: response.admin,
         isLoading: false,
         error: null,
         requires2FA: false,
-        pendingAdminId: null,
       });
       window.location.reload();
     } catch (error: any) {
@@ -97,7 +85,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   clear2FAState: () => {
     set({
       requires2FA: false,
-      pendingAdminId: null,
       error: null,
     });
   },
