@@ -77,6 +77,7 @@ export class AuthService {
         payload.recaptchaToken = recaptchaToken;
       }
 
+      console.log('Login: Making login request...');
       const response = await axios.post<LoginResponse | TwoFactorRequiredResponse>(
         `${API_BASE_URL}/api/v1/auth/portal-auth-gate-7a3b9f`,
         payload,
@@ -88,13 +89,18 @@ export class AuthService {
         }
       );
 
+      console.log('Login: Response received:', response.data);
+      console.log('Login: Has requires2FA?', 'requires2FA' in response.data);
+      console.log('Login: requires2FA value:', (response.data as any).requires2FA);
+
       // Check if 2FA is required
       if ('requires2FA' in response.data && response.data.requires2FA) {
-        // Store temporary refresh token for 2FA verification
-        this.refreshToken = response.data.refresh_token;
-        localStorage.setItem('temp_2fa_token', response.data.refresh_token);
+        console.log('Login: 2FA is required, returning response to store');
+        console.log('Login: refresh_token from response:', response.data.refresh_token);
         return response.data;
       }
+
+      console.log('Login: 2FA not required, proceeding with normal login');
 
       const { access_token, refresh_token, admin } = response.data as LoginResponse;
 
@@ -117,15 +123,16 @@ export class AuthService {
     }
   }
 
-  async verify2FALogin(code: string): Promise<LoginResponse> {
+  async verify2FALogin(code: string, tempRefreshToken: string): Promise<LoginResponse> {
     try {
-      // Get the temporary refresh token from localStorage
-      const tempRefreshToken = localStorage.getItem('temp_2fa_token') || this.refreshToken;
+      console.log('verify2FALogin called with code:', code);
+      console.log('verify2FALogin: tempRefreshToken provided:', !!tempRefreshToken);
 
       if (!tempRefreshToken) {
         throw new Error('No temporary token found. Please login again.');
       }
 
+      console.log('Making 2FA verification request...');
       const response = await axios.post<LoginResponse>(
         `${API_BASE_URL}/api/v1/auth/portal-auth-gate-2fa`,
         { refresh_token: tempRefreshToken, code },
@@ -137,6 +144,7 @@ export class AuthService {
         }
       );
 
+      console.log('2FA verification successful');
       const { access_token, refresh_token, admin } = response.data;
 
       // Store token and admin data
@@ -149,14 +157,13 @@ export class AuthService {
       localStorage.setItem('login_time', Date.now().toString());
       localStorage.setItem('last_activity', Date.now().toString());
 
-      // Remove temporary 2FA token
-      localStorage.removeItem('temp_2fa_token');
-
       // Set axios default authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
 
       return response.data;
     } catch (error: any) {
+      console.error('2FA verification error:', error);
+      console.error('Error response:', error.response?.data);
       throw new Error(error.response?.data?.message || '2FA verification failed');
     }
   }
