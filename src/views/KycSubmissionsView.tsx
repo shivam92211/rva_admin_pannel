@@ -329,7 +329,7 @@ const KycSubmissionsView: React.FC = () => {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
-                            {getActionButtons(submission)}
+                            {/* {getActionButtons(submission)} */}
                           </div>
                         </td>
                       </tr>
