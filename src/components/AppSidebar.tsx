@@ -2,20 +2,14 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
   Home,
-  Users,
-  ArrowLeftRight,
   Wallet,
   ArrowUpRight,
-  TrendingUp,
-  ChevronUp,
   User2,
   LogOut,
-  Menu,
   UserCheck,
   FileText,
   ArrowRightLeft,
   Shield,
-  Settings,
   SlidersHorizontal,
   MessageSquare,
   ShieldCheck
@@ -198,7 +192,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="w-full">
         <SidebarMenu className="w-full">
-          {!admin?.twoFactorEnabled && (
+          {!admin?.isGoogle2FAEnabled && (
             <SidebarMenuItem>
               <SidebarMenuButton
                 onClick={handle2FAClick}

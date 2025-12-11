@@ -28,11 +28,16 @@ export interface Admin {
   role: string;
   permissions: string[];
   isActive: boolean;
-  twoFactorEnabled: boolean;
-  lastLoginAt: string | null;
-  profilePicture: string | null;
-  phone: string | null;
-  department: string | null;
+  lastLoginAt: string;
+  failedAttempts: number;
+  lockedUntil: any;
+  profilePicture: any;
+  phone: string;
+  department: string;
+  isGoogle2FAEnabled: boolean;
+  google2FASecret: string;
+  createdBy: any;
+  deletedAt: any;
   createdAt: string;
   updatedAt: string;
 }
@@ -381,7 +386,7 @@ export class AuthService {
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to verify 2FA code');
     }
-  } 
+  }
 
   // Initialize axios interceptor for automatic token refresh on 401
   setupAxiosInterceptors(): void {
