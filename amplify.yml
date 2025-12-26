@@ -6,34 +6,37 @@ frontend:
         - 'nvm use 22'
         - 'npm i -g bun'
         - 'bun i'
-        # Branch-specific .env injection
+        # Branch-specific environment detection
         - |
-          echo "Building for branch -> $AWS_BRANCH"
+          echo "=== Environment Detection ==="
+          echo "AWS_BRANCH variable: '$AWS_BRANCH'"
           echo "Git branch: $(git branch --show-current || echo 'unknown')"
 
           # Determine the branch (try AWS_BRANCH first, then git)
           BRANCH="${AWS_BRANCH:-$(git branch --show-current)}"
-          echo "Detected branch: $BRANCH"
+          # Trim whitespace and convert to lowercase for comparison
+          BRANCH=$(echo "$BRANCH" | xargs | tr '[:upper:]' '[:lower:]')
+          echo "Normalized branch: '$BRANCH'"
 
+          # List available .env files for debugging
+          echo "Available .env files:"
+          ls -la .env* 2>/dev/null || echo "No .env files found"
+
+          echo "=== Build Mode Selection ==="
           if [ "$BRANCH" = "production" ]; then
-            echo "Using production environment"
-            cp .env.production .env
-          elif [ "$BRANCH" = "main" ]; then
-            echo "Using staging environment"
-            cp .env.staging .env
+            echo "✓ Will build in production mode (uses .env.production)"
+          elif [ "$BRANCH" = "staging" ]; then
+            echo "✓ Will build in staging mode (uses .env.staging)"
           else
-            echo "No specific env file for branch $BRANCH"
-            if [ -f .env ]; then
-              echo "Using existing .env file"
-            else
-              echo "WARNING: No .env file found!"
-            fi
+            echo "⚠ Unknown branch '$BRANCH', will use default mode"
           fi
     build:
       commands:
-        - 'echo "Active env file (first lines, if present):"'
-        - 'head -n 5 .env || echo ".env not found"'
-        - 'bun run build'
+        - 'echo "=== Starting Build Phase ==="'
+        - 'echo "Branch is $AWS_BRANCH"'
+        - 'npx vite build --mode $AWS_BRANCH'
+        - 'echo "=== Build Complete ==="'
+        - 'ls -lh dist/ | head -10 || echo "dist directory not found"'
   artifacts:
     baseDirectory: dist
     files:
